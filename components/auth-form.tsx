@@ -104,14 +104,22 @@ export function AuthForm({ onAuthSuccess }: AuthFormProps) {
         }
 
         // Save user with password
-        await (storage as any).saveUser(newUser, password)
-        storage.setCurrentUser(newUser.id)
-        onAuthSuccess(newUser)
+        try {
+          await (storage as any).saveUser(newUser, password)
+          console.log('✅ User registration complete')
+          storage.setCurrentUser(newUser.id)
+          onAuthSuccess(newUser)
+        } catch (saveError: any) {
+          console.error('❌ Failed to save user:', saveError)
+          setError(`Registration failed: ${saveError.message || 'Unable to save to database'}`)
+          setIsLoading(false)
+          return
+        }
       }
       setIsLoading(false)
-    } catch (error) {
+    } catch (error: any) {
       console.error('Auth error:', error)
-      setError('An error occurred. Please try again.')
+      setError(error.message || 'An error occurred. Please try again.')
       setIsLoading(false)
     }
   }

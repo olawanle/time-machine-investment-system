@@ -148,6 +148,8 @@ export const supabaseStorage = {
   saveUser: async (user: User, password?: string) => {
     if (typeof window === "undefined") return
     
+    console.log('💾 Saving user:', user.email)
+    
     const userData: any = {
       id: user.id,
       email: user.email,
@@ -156,7 +158,7 @@ export const supabaseStorage = {
       balance: user.balance,
       claimed_balance: user.claimedBalance,
       referral_code: user.referralCode,
-      referred_by: user.referredBy,
+      referred_by: user.referredBy || null,
       last_withdrawal_date: user.lastWithdrawalDate,
       tier: user.tier,
       total_invested: user.totalInvested,
@@ -166,38 +168,54 @@ export const supabaseStorage = {
 
     // Hash password if provided
     if (password) {
+      console.log('🔐 Hashing password...')
       userData.password_hash = await hashPassword(password)
+      console.log('✅ Password hashed')
     }
     
     // Update user data
-    const { error: userError } = await supabase
+    console.log('📝 Upserting user to database...')
+    const { data: savedUser, error: userError } = await supabase
       .from('users')
-      .upsert(userData)
+      .upsert(userData, { onConflict: 'id' })
+      .select()
     
     if (userError) {
-      console.error('Error saving user:', userError)
-      return
+      console.error('❌ Error saving user:', userError)
+      throw new Error(`Failed to save user: ${userError.message}`)
     }
     
+    console.log('✅ User saved successfully:', savedUser)
+    
     // Update time machines
-    for (const machine of user.machines) {
-      await supabase
-        .from('time_machines')
-        .upsert({
-          id: machine.id,
-          user_id: user.id,
-          level: machine.level,
-          name: machine.name,
-          description: machine.description,
-          unlocked_at: machine.unlockedAt,
-          last_claimed_at: machine.lastClaimedAt,
-          is_active: machine.isActive,
-          reward_amount: machine.rewardAmount,
-          claim_interval_ms: machine.claimIntervalMs,
-          icon: machine.icon,
-          updated_at: new Date().toISOString(),
-        })
+    if (user.machines.length > 0) {
+      console.log(`🤖 Saving ${user.machines.length} time machines...`)
+      for (const machine of user.machines) {
+        const { error: machineError } = await supabase
+          .from('time_machines')
+          .upsert({
+            id: machine.id,
+            user_id: user.id,
+            level: machine.level,
+            name: machine.name,
+            description: machine.description,
+            unlocked_at: machine.unlockedAt,
+            last_claimed_at: machine.lastClaimedAt,
+            is_active: machine.isActive,
+            reward_amount: machine.rewardAmount,
+            claim_interval_ms: machine.claimIntervalMs,
+            icon: machine.icon,
+            updated_at: new Date().toISOString(),
+          })
+        
+        if (machineError) {
+          console.error('❌ Error saving machine:', machineError)
+        }
+      }
+      console.log('✅ Time machines saved')
     }
+    
+    console.log('✅ Save complete!')
   },
 
   getUser: async (userId: string): Promise<User | null> => {
