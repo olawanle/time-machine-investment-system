@@ -23,12 +23,15 @@ export function AuthForm({ onAuthSuccess }: AuthFormProps) {
   const [error, setError] = useState("")
   const [isLoading, setIsLoading] = useState(false)
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError("")
     setIsLoading(true)
 
-    setTimeout(() => {
+    // Small delay for UX
+    await new Promise(resolve => setTimeout(resolve, 500))
+
+    try {
       if (isLogin) {
         if (email === "admin@chronostime.com" && password === "admin123") {
           const adminUser: User = {
@@ -52,7 +55,7 @@ export function AuthForm({ onAuthSuccess }: AuthFormProps) {
           return
         }
 
-        const users = storage.getAllUsers()
+        const users = await storage.getAllUsers()
         const user = users.find((u) => u.email === email)
         if (!user) {
           setError("Invalid email or password")
@@ -68,7 +71,7 @@ export function AuthForm({ onAuthSuccess }: AuthFormProps) {
           return
         }
 
-        const users = storage.getAllUsers()
+        const users = await storage.getAllUsers()
         if (users.some((u) => u.email === email)) {
           setError("Email already registered")
           setIsLoading(false)
@@ -96,16 +99,20 @@ export function AuthForm({ onAuthSuccess }: AuthFormProps) {
           if (referrer) {
             newUser.referredBy = referrer.id
             referrer.referrals.push(newUser.id)
-            storage.saveUser(referrer)
+            await storage.saveUser(referrer)
           }
         }
 
-        storage.saveUser(newUser)
+        await storage.saveUser(newUser)
         storage.setCurrentUser(newUser.id)
         onAuthSuccess(newUser)
       }
       setIsLoading(false)
-    }, 500)
+    } catch (error) {
+      console.error('Auth error:', error)
+      setError('An error occurred. Please try again.')
+      setIsLoading(false)
+    }
   }
 
   return (

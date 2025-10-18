@@ -15,12 +15,15 @@ export default function Home() {
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    const currentUser = storage.getCurrentUser()
-    if (currentUser) {
-      setUser(currentUser)
-      setView(currentUser.email === "admin@chronostime.com" ? "admin" : "dashboard")
+    const loadUser = async () => {
+      const currentUser = await storage.getCurrentUser()
+      if (currentUser) {
+        setUser(currentUser)
+        setView(currentUser.email === "admin@chronostime.com" ? "admin" : "dashboard")
+      }
+      setIsLoading(false)
     }
-    setIsLoading(false)
+    loadUser()
   }, [])
 
   const handleAuthSuccess = (newUser: User) => {

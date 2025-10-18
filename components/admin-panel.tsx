@@ -39,9 +39,9 @@ export function AdminPanel({ onLogout, onBackToDashboard }: AdminPanelProps) {
   })
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      const requests = storage.getWithdrawalRequests()
-      const allUsers = storage.getAllUsers()
+    const interval = setInterval(async () => {
+      const requests = await storage.getWithdrawalRequests()
+      const allUsers = await storage.getAllUsers()
 
       setWithdrawalRequests(requests)
       setUsers(allUsers)
@@ -65,20 +65,22 @@ export function AdminPanel({ onLogout, onBackToDashboard }: AdminPanelProps) {
     return () => clearInterval(interval)
   }, [])
 
-  const handleApproveWithdrawal = (id: string) => {
-    storage.updateWithdrawalRequest(id, {
+  const handleApproveWithdrawal = async (id: string) => {
+    await storage.updateWithdrawalRequest(id, {
       status: "approved",
       processedAt: Date.now(),
     })
-    setWithdrawalRequests(storage.getWithdrawalRequests())
+    const requests = await storage.getWithdrawalRequests()
+    setWithdrawalRequests(requests)
   }
 
-  const handleRejectWithdrawal = (id: string) => {
-    storage.updateWithdrawalRequest(id, {
+  const handleRejectWithdrawal = async (id: string) => {
+    await storage.updateWithdrawalRequest(id, {
       status: "rejected",
       processedAt: Date.now(),
     })
-    setWithdrawalRequests(storage.getWithdrawalRequests())
+    const requests = await storage.getWithdrawalRequests()
+    setWithdrawalRequests(requests)
   }
 
   return (

@@ -35,8 +35,8 @@ export function Dashboard({ user: initialUser, onLogout, currentView, onNavigate
   const [suggestions, setSuggestions] = useState<Array<{ title: string; description: string; action: string }>>([])
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      const currentUser = storage.getCurrentUser()
+    const interval = setInterval(async () => {
+      const currentUser = await storage.getCurrentUser()
       if (currentUser) {
         setUser(currentUser)
         generateSuggestions(currentUser)
@@ -87,7 +87,7 @@ export function Dashboard({ user: initialUser, onLogout, currentView, onNavigate
     setSuggestions(newSuggestions.slice(0, 3))
   }
 
-  const handleInvest = () => {
+  const handleInvest = async () => {
     setError("")
     setSuccess("")
 
@@ -119,25 +119,25 @@ export function Dashboard({ user: initialUser, onLogout, currentView, onNavigate
       setSuccess(`Machine #${newMachine.level} unlocked!`)
     }
 
-    storage.saveUser(updatedUser)
+    await storage.saveUser(updatedUser)
     setUser(updatedUser)
     setInvestAmount("")
   }
 
-  const handleClaim = (machineId: string) => {
+  const handleClaim = async (machineId: string) => {
     const updatedUser = { ...user }
     const machine = updatedUser.machines.find((m) => m.id === machineId)
 
     if (machine) {
       updatedUser.claimedBalance += machine.rewardAmount
       machine.lastClaimedAt = Date.now()
-      storage.saveUser(updatedUser)
+      await storage.saveUser(updatedUser)
       setUser(updatedUser)
       setSuccess(`Claimed ${formatCurrency(machine.rewardAmount)}!`)
     }
   }
 
-  const handleWithdraw = () => {
+  const handleWithdraw = async () => {
     setError("")
     setSuccess("")
 
@@ -176,8 +176,8 @@ export function Dashboard({ user: initialUser, onLogout, currentView, onNavigate
       createdAt: Date.now(),
     }
 
-    storage.saveWithdrawalRequest(request)
-    storage.saveUser(updatedUser)
+    await storage.saveWithdrawalRequest(request)
+    await storage.saveUser(updatedUser)
     setUser(updatedUser)
     setWithdrawAmount("")
     setWalletAddress("")
