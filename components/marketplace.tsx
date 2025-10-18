@@ -193,7 +193,7 @@ export function Marketplace({ user, onNavigate, onLogout }: MarketplaceProps) {
                 <iframe 
                   src={`https://nowpayments.io/embeds/payment-widget?iid=${selectedMachine.paymentWidgetId}`}
                   width="100%" 
-                  height="696" 
+                  height="420" 
                   frameBorder="0" 
                   scrolling="no" 
                   style={{ overflow: 'hidden' }}
