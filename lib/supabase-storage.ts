@@ -20,6 +20,8 @@ const verifyPassword = async (password: string, hash: string): Promise<boolean> 
 export const supabaseStorage = {
   // Verify login credentials
   verifyLogin: async (email: string, password: string): Promise<User | null> => {
+    console.log('🔍 Attempting login for:', email)
+    
     const { data, error } = await supabase
       .from('users')
       .select(`
@@ -30,12 +32,37 @@ export const supabaseStorage = {
       .eq('email', email)
       .single()
     
-    if (error || !data) return null
-    
-    // Verify password
-    if (data.password_hash && !(await verifyPassword(password, data.password_hash))) {
+    if (error) {
+      console.error('❌ Database error:', error)
       return null
     }
+    
+    if (!data) {
+      console.log('❌ User not found')
+      return null
+    }
+    
+    console.log('✅ User found:', { email: data.email, hasPassword: !!data.password_hash })
+    
+    // If user has a password hash, verify it
+    if (data.password_hash) {
+      const isValid = await verifyPassword(password, data.password_hash)
+      console.log('🔐 Password verification:', isValid ? '✅ Valid' : '❌ Invalid')
+      if (!isValid) {
+        return null
+      }
+    } else {
+      // User created before password system - update with password now
+      console.log('⚠️ User has no password hash, updating now...')
+      const passwordHash = await hashPassword(password)
+      await supabase
+        .from('users')
+        .update({ password_hash: passwordHash })
+        .eq('id', data.id)
+      console.log('✅ Password hash updated')
+    }
+    
+    console.log('✅ Login successful')
     
     return {
       id: data.id,
