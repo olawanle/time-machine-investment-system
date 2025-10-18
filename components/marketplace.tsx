@@ -1,10 +1,11 @@
 "use client"
+import { useState } from "react"
 import type { User } from "@/lib/storage"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Navigation } from "./navigation"
 import { Badge } from "@/components/ui/badge"
-import { ShoppingBag, Zap } from "lucide-react"
+import { ShoppingBag, Zap, X } from "lucide-react"
 
 interface MarketplaceProps {
   user: User
@@ -43,6 +44,16 @@ const machines = [
 ]
 
 export function Marketplace({ user, onNavigate, onLogout }: MarketplaceProps) {
+  const [showPaymentModal, setShowPaymentModal] = useState(false)
+  const [selectedMachine, setSelectedMachine] = useState<typeof machines[0] | null>(null)
+
+  const handleViewDetails = (machine: typeof machines[0]) => {
+    setSelectedMachine(machine)
+    if (machine.name === "Quantum Leap") {
+      setShowPaymentModal(true)
+    }
+  }
+
   return (
     <div className="min-h-screen bg-background">
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
@@ -119,7 +130,12 @@ export function Marketplace({ user, onNavigate, onLogout }: MarketplaceProps) {
                     <p className="font-semibold text-blue-400 mt-1">{machine.duration}</p>
                   </div>
                 </div>
-                <Button className="w-full btn-primary">View Details</Button>
+                <Button 
+                  onClick={() => handleViewDetails(machine)}
+                  className="w-full btn-primary"
+                >
+                  {machine.name === "Quantum Leap" ? "Purchase Now" : "View Details"}
+                </Button>
               </CardContent>
             </Card>
           ))}
@@ -131,6 +147,66 @@ export function Marketplace({ user, onNavigate, onLogout }: MarketplaceProps) {
           <Button className="glass glow-cyan border border-cyan-400/30 text-cyan-400 hover:bg-cyan-500/20">3</Button>
         </div>
       </main>
+
+      {/* Payment Modal */}
+      {showPaymentModal && selectedMachine && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+          <div className="relative bg-gradient-to-br from-slate-900 to-blue-950 rounded-2xl border-2 border-cyan-400/50 shadow-2xl shadow-cyan-500/20 max-w-lg w-full">
+            {/* Header */}
+            <div className="flex items-center justify-between p-6 border-b border-cyan-400/30">
+              <div>
+                <h3 className="text-2xl font-bold gradient-text">{selectedMachine.name}</h3>
+                <p className="text-sm text-muted-foreground mt-1">Complete your purchase</p>
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setShowPaymentModal(false)}
+                className="text-muted-foreground hover:text-foreground hover:bg-cyan-500/10"
+              >
+                <X className="w-5 h-5" />
+              </Button>
+            </div>
+
+            {/* Payment Details */}
+            <div className="p-6 space-y-4">
+              <div className="glass-sm p-4 rounded-lg space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Machine Cost:</span>
+                  <span className="font-semibold text-cyan-400">${selectedMachine.cost}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Bonus:</span>
+                  <span className="font-semibold text-green-400">{selectedMachine.bonus}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Duration:</span>
+                  <span className="font-semibold text-blue-400">{selectedMachine.duration}</span>
+                </div>
+              </div>
+
+              {/* Payment Widget */}
+              <div className="rounded-lg overflow-hidden border-2 border-cyan-400/30 bg-white">
+                <iframe 
+                  src="https://nowpayments.io/embeds/payment-widget?iid=5858741736" 
+                  width="100%" 
+                  height="696" 
+                  frameBorder="0" 
+                  scrolling="no" 
+                  style={{ overflow: 'hidden' }}
+                  title="NOWPayments Widget"
+                >
+                  Can't load widget
+                </iframe>
+              </div>
+
+              <p className="text-xs text-muted-foreground text-center">
+                Secure payment powered by NOWPayments
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
