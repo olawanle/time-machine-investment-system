@@ -57,13 +57,19 @@ export interface Suggestion {
   createdAt: number
 }
 
+import { supabaseStorage } from './supabase-storage'
+
 const STORAGE_KEY = "chronostime_data"
 const USERS_KEY = "chronostime_users"
 const WITHDRAWALS_KEY = "chronostime_withdrawals"
 const REFERRALS_KEY = "chronostime_referrals"
 const SUGGESTIONS_KEY = "chronostime_suggestions"
 
-export const storage = {
+// Use Supabase for storage - export as default storage
+export const storage = supabaseStorage
+
+// Keep localStorage version as backup
+export const localStorageBackup = {
   getCurrentUser: (): User | null => {
     if (typeof window === "undefined") return null
     const userId = localStorage.getItem("chronostime_current_user")
