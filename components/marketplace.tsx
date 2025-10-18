@@ -22,6 +22,7 @@ const machines = [
     duration: "30 Days",
     rarity: "NEW",
     image: "/quantum-leap-time-machine.jpg",
+    paymentWidgetId: "5858741736",
   },
   {
     id: 2,
@@ -31,6 +32,7 @@ const machines = [
     duration: "45 Days",
     rarity: "LEGENDARY",
     image: "/temporal-shift-unit.jpg",
+    paymentWidgetId: "4978857735",
   },
   {
     id: 3,
@@ -40,6 +42,7 @@ const machines = [
     duration: "60 Days",
     rarity: "POPULAR",
     image: "/nova-jumper-time-machine.jpg",
+    paymentWidgetId: "5075645750",
   },
 ]
 
@@ -49,7 +52,7 @@ export function Marketplace({ user, onNavigate, onLogout }: MarketplaceProps) {
 
   const handleViewDetails = (machine: typeof machines[0]) => {
     setSelectedMachine(machine)
-    if (machine.name === "Quantum Leap") {
+    if (machine.paymentWidgetId) {
       setShowPaymentModal(true)
     }
   }
@@ -134,7 +137,7 @@ export function Marketplace({ user, onNavigate, onLogout }: MarketplaceProps) {
                   onClick={() => handleViewDetails(machine)}
                   className="w-full btn-primary"
                 >
-                  {machine.name === "Quantum Leap" ? "Purchase Now" : "View Details"}
+                  {machine.paymentWidgetId ? "Purchase Now" : "View Details"}
                 </Button>
               </CardContent>
             </Card>
@@ -188,7 +191,7 @@ export function Marketplace({ user, onNavigate, onLogout }: MarketplaceProps) {
               {/* Payment Widget */}
               <div className="rounded-lg overflow-hidden border-2 border-cyan-400/30 bg-white">
                 <iframe 
-                  src="https://nowpayments.io/embeds/payment-widget?iid=5858741736" 
+                  src={`https://nowpayments.io/embeds/payment-widget?iid=${selectedMachine.paymentWidgetId}`}
                   width="100%" 
                   height="696" 
                   frameBorder="0" 
