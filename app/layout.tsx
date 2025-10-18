@@ -14,7 +14,6 @@ const _sourceSerif_4 = V0_Font_Source_Serif_4({ subsets: ['latin'], weight: ["20
 export const metadata: Metadata = {
   title: "ChronoVault - Time Machine Investment Platform",
   description: "Invest in time machines and earn passive rewards with ChronoVault",
-  generator: "v0.app",
 }
 
 export default function RootLayout({
