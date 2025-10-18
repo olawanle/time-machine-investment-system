@@ -3,7 +3,69 @@ import type { User, TimeMachine, WithdrawalRequest, Suggestion } from './storage
 
 const supabase = createClient()
 
+// Simple password hashing (for demo - use bcrypt in production)
+const hashPassword = async (password: string): Promise<string> => {
+  const encoder = new TextEncoder()
+  const data = encoder.encode(password)
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data)
+  const hashArray = Array.from(new Uint8Array(hashBuffer))
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('')
+}
+
+const verifyPassword = async (password: string, hash: string): Promise<boolean> => {
+  const passwordHash = await hashPassword(password)
+  return passwordHash === hash
+}
+
 export const supabaseStorage = {
+  // Verify login credentials
+  verifyLogin: async (email: string, password: string): Promise<User | null> => {
+    const { data, error } = await supabase
+      .from('users')
+      .select(`
+        *,
+        time_machines(*),
+        referrals:referrals!referrer_id(*)
+      `)
+      .eq('email', email)
+      .single()
+    
+    if (error || !data) return null
+    
+    // Verify password
+    if (data.password_hash && !(await verifyPassword(password, data.password_hash))) {
+      return null
+    }
+    
+    return {
+      id: data.id,
+      email: data.email,
+      username: data.username || data.name || data.email.split('@')[0],
+      balance: Number(data.balance),
+      claimedBalance: Number(data.claimed_balance),
+      machines: data.time_machines?.map((m: any) => ({
+        id: m.id,
+        level: m.level,
+        name: m.name,
+        description: m.description,
+        unlockedAt: Number(m.unlocked_at),
+        lastClaimedAt: Number(m.last_claimed_at),
+        isActive: m.is_active,
+        rewardAmount: Number(m.reward_amount),
+        claimIntervalMs: Number(m.claim_interval_ms),
+        icon: m.icon,
+      })) || [],
+      referralCode: data.referral_code,
+      referredBy: data.referred_by || undefined,
+      referrals: data.referrals?.map((r: any) => r.referred_user_id) || [],
+      lastWithdrawalDate: Number(data.last_withdrawal_date),
+      createdAt: new Date(data.created_at).getTime(),
+      tier: data.tier || 'bronze',
+      totalInvested: Number(data.total_invested),
+      roi: Number(data.roi),
+    }
+  },
+
   getCurrentUser: async (): Promise<User | null> => {
     if (typeof window === "undefined") return null
     
@@ -56,27 +118,34 @@ export const supabaseStorage = {
     localStorage.setItem("chronostime_current_user", userId)
   },
 
-  saveUser: async (user: User) => {
+  saveUser: async (user: User, password?: string) => {
     if (typeof window === "undefined") return
+    
+    const userData: any = {
+      id: user.id,
+      email: user.email,
+      username: user.username,
+      name: user.username,
+      balance: user.balance,
+      claimed_balance: user.claimedBalance,
+      referral_code: user.referralCode,
+      referred_by: user.referredBy,
+      last_withdrawal_date: user.lastWithdrawalDate,
+      tier: user.tier,
+      total_invested: user.totalInvested,
+      roi: user.roi,
+      updated_at: new Date().toISOString(),
+    }
+
+    // Hash password if provided
+    if (password) {
+      userData.password_hash = await hashPassword(password)
+    }
     
     // Update user data
     const { error: userError } = await supabase
       .from('users')
-      .upsert({
-        id: user.id,
-        email: user.email,
-        username: user.username,
-        name: user.username,
-        balance: user.balance,
-        claimed_balance: user.claimedBalance,
-        referral_code: user.referralCode,
-        referred_by: user.referredBy,
-        last_withdrawal_date: user.lastWithdrawalDate,
-        tier: user.tier,
-        total_invested: user.totalInvested,
-        roi: user.roi,
-        updated_at: new Date().toISOString(),
-      })
+      .upsert(userData)
     
     if (userError) {
       console.error('Error saving user:', userError)

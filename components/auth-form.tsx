@@ -55,8 +55,8 @@ export function AuthForm({ onAuthSuccess }: AuthFormProps) {
           return
         }
 
-        const users = await storage.getAllUsers()
-        const user = users.find((u) => u.email === email)
+        // Use verifyLogin to check email and password
+        const user = await (storage as any).verifyLogin(email, password)
         if (!user) {
           setError("Invalid email or password")
           setIsLoading(false)
@@ -103,7 +103,8 @@ export function AuthForm({ onAuthSuccess }: AuthFormProps) {
           }
         }
 
-        await storage.saveUser(newUser)
+        // Save user with password
+        await (storage as any).saveUser(newUser, password)
         storage.setCurrentUser(newUser.id)
         onAuthSuccess(newUser)
       }
