@@ -13,6 +13,15 @@ export interface User {
   tier: "bronze" | "silver" | "gold" | "platinum"
   totalInvested: number
   roi: number
+  lastSpinDate?: number
+  spinStreak?: number
+  totalSpins?: number
+  achievements?: string[]
+  badges?: string[]
+  level?: number
+  experiencePoints?: number
+  autoReinvest?: boolean
+  reinvestPercentage?: number
 }
 
 export interface TimeMachine {

@@ -13,7 +13,13 @@ import { Navigation } from "./navigation"
 import { AnimatedStatCard } from "./animated-stat-card"
 import { AnimatedCounter } from "./animated-counter"
 import { TimeMachine3D } from "./time-machine-3d"
+import { DailySpinWheel } from "./daily-spin-wheel"
+import { Achievements } from "./achievements"
+import { Leaderboard } from "./leaderboard"
+import { PlatformStats } from "./platform-stats"
+import { ROICalculator } from "./roi-calculator"
 import { formatCurrency, generateId } from "@/lib/utils"
+import { successConfetti } from "@/lib/confetti"
 import type { TimeMachine } from "@/lib/storage"
 import { TrendingUp, Zap, Users, Clock, Lightbulb, Award, ArrowUpRight } from "lucide-react"
 
@@ -87,6 +93,17 @@ export function Dashboard({ user: initialUser, onLogout, currentView, onNavigate
     setSuggestions(newSuggestions.slice(0, 3))
   }
 
+  const handleDailySpin = async (reward: number) => {
+    const updatedUser = { ...user }
+    updatedUser.claimedBalance += reward
+    updatedUser.lastSpinDate = Date.now()
+    updatedUser.totalSpins = (updatedUser.totalSpins || 0) + 1
+    
+    await storage.saveUser(updatedUser)
+    setUser(updatedUser)
+    setSuccess(`Won ${formatCurrency(reward)} from daily spin!`)
+  }
+
   const handleInvest = async () => {
     setError("")
     setSuccess("")
@@ -117,11 +134,13 @@ export function Dashboard({ user: initialUser, onLogout, currentView, onNavigate
       }
       updatedUser.machines.push(newMachine)
       setSuccess(`Machine #${newMachine.level} unlocked!`)
+      successConfetti()
     }
 
     await storage.saveUser(updatedUser)
     setUser(updatedUser)
     setInvestAmount("")
+    successConfetti()
   }
 
   const handleClaim = async (machineId: string) => {
@@ -134,6 +153,7 @@ export function Dashboard({ user: initialUser, onLogout, currentView, onNavigate
       await storage.saveUser(updatedUser)
       setUser(updatedUser)
       setSuccess(`Claimed ${formatCurrency(machine.rewardAmount)}!`)
+      successConfetti()
     }
   }
 
@@ -417,6 +437,39 @@ export function Dashboard({ user: initialUser, onLogout, currentView, onNavigate
                 </p>
               </CardContent>
             </Card>
+          </div>
+        </div>
+
+        {/* New Features Section */}
+        <div className="mt-12 space-y-8">
+          {/* Platform Statistics */}
+          <PlatformStats />
+
+          {/* Daily Spin Wheel & ROI Calculator */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <DailySpinWheel 
+              userId={user.id}
+              lastSpinDate={user.lastSpinDate || 0}
+              onSpin={handleDailySpin}
+            />
+            <ROICalculator />
+          </div>
+
+          {/* Achievements & Leaderboard */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <Achievements 
+              userStats={{
+                totalInvested: user.totalInvested,
+                totalEarned: user.claimedBalance,
+                machinesOwned: user.machines.length,
+                referralsCount: user.referrals.length,
+                daysActive: Math.floor((Date.now() - user.createdAt) / (1000 * 60 * 60 * 24))
+              }}
+            />
+            <Leaderboard 
+              currentUserId={user.id}
+              currentUsername={user.username}
+            />
           </div>
         </div>
       </main>
