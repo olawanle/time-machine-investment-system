@@ -1,11 +1,12 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Trophy, TrendingUp, Users, Crown, Medal, Award } from "lucide-react"
 import { formatCurrency } from "@/lib/utils"
+import { storage, type User } from "@/lib/storage"
 
 interface LeaderboardEntry {
   rank: number
@@ -21,40 +22,75 @@ interface LeaderboardProps {
 
 export function Leaderboard({ currentUserId, currentUsername }: LeaderboardProps) {
   const [category, setCategory] = useState<"investors" | "earners" | "referrers">("investors")
+  const [leaderboardData, setLeaderboardData] = useState<{
+    investors: LeaderboardEntry[]
+    earners: LeaderboardEntry[]
+    referrers: LeaderboardEntry[]
+  }>({
+    investors: [],
+    earners: [],
+    referrers: []
+  })
 
-  // Mock data - will be replaced with real data from Supabase
-  const mockInvestors: LeaderboardEntry[] = [
-    { rank: 1, username: "CryptoKing", value: 5000 },
-    { rank: 2, username: "TimeLord", value: 3500 },
-    { rank: 3, username: "InvestPro", value: 2800 },
-    { rank: 4, username: "WealthBuilder", value: 2100 },
-    { rank: 5, username: currentUsername, value: 1500, isCurrentUser: true },
-  ]
+  useEffect(() => {
+    const fetchLeaderboardData = async () => {
+      const allUsers = await storage.getAllUsers()
+      
+      // Sort by total invested
+      const topInvestors = [...allUsers]
+        .sort((a, b) => b.totalInvested - a.totalInvested)
+        .slice(0, 10)
+        .map((user, index) => ({
+          rank: index + 1,
+          username: user.username,
+          value: user.totalInvested,
+          isCurrentUser: user.id === currentUserId
+        }))
 
-  const mockEarners: LeaderboardEntry[] = [
-    { rank: 1, username: "ProfitMaster", value: 850 },
-    { rank: 2, username: "MoneyMaker", value: 720 },
-    { rank: 3, username: "EarnKing", value: 650 },
-    { rank: 4, username: "WealthFlow", value: 580 },
-    { rank: 5, username: currentUsername, value: 420, isCurrentUser: true },
-  ]
+      // Sort by claimed balance (earnings)
+      const topEarners = [...allUsers]
+        .sort((a, b) => b.claimedBalance - a.claimedBalance)
+        .slice(0, 10)
+        .map((user, index) => ({
+          rank: index + 1,
+          username: user.username,
+          value: user.claimedBalance,
+          isCurrentUser: user.id === currentUserId
+        }))
 
-  const mockReferrers: LeaderboardEntry[] = [
-    { rank: 1, username: "NetworkGuru", value: 25 },
-    { rank: 2, username: "InfluencerPro", value: 18 },
-    { rank: 3, username: "SocialKing", value: 15 },
-    { rank: 4, username: "TeamBuilder", value: 12 },
-    { rank: 5, username: currentUsername, value: 8, isCurrentUser: true },
-  ]
+      // Sort by referral count
+      const topReferrers = [...allUsers]
+        .sort((a, b) => b.referrals.length - a.referrals.length)
+        .slice(0, 10)
+        .map((user, index) => ({
+          rank: index + 1,
+          username: user.username,
+          value: user.referrals.length,
+          isCurrentUser: user.id === currentUserId
+        }))
+
+      setLeaderboardData({
+        investors: topInvestors,
+        earners: topEarners,
+        referrers: topReferrers
+      })
+    }
+
+    fetchLeaderboardData()
+    
+    // Refresh every 30 seconds
+    const interval = setInterval(fetchLeaderboardData, 30000)
+    return () => clearInterval(interval)
+  }, [currentUserId])
 
   const getCurrentData = () => {
     switch (category) {
       case "investors":
-        return mockInvestors
+        return leaderboardData.investors
       case "earners":
-        return mockEarners
+        return leaderboardData.earners
       case "referrers":
-        return mockReferrers
+        return leaderboardData.referrers
     }
   }
 

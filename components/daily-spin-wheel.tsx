@@ -13,7 +13,7 @@ interface DailySpinWheelProps {
   onSpin: (reward: number) => void
 }
 
-const rewards = [10, 25, 50, 100, 5, 15, 20, 75]
+const rewards = [5, 10, 15, 20, 25, 30, 35, 40] // Percentage discounts
 const colors = [
   "from-cyan-500 to-blue-500",
   "from-green-500 to-emerald-500",
@@ -35,15 +35,15 @@ export function DailySpinWheel({ userId, lastSpinDate, onSpin }: DailySpinWheelP
   useEffect(() => {
     const checkSpinAvailability = () => {
       const now = Date.now()
-      const oneDayMs = 24 * 60 * 60 * 1000
+      const spinIntervalMs = 72 * 60 * 60 * 1000 // 72 hours
       const timeSinceLastSpin = now - lastSpinDate
 
-      if (timeSinceLastSpin >= oneDayMs || lastSpinDate === 0) {
+      if (timeSinceLastSpin >= spinIntervalMs || lastSpinDate === 0) {
         setCanSpin(true)
         setTimeUntilNextSpin("")
       } else {
         setCanSpin(false)
-        const timeLeft = oneDayMs - timeSinceLastSpin
+        const timeLeft = spinIntervalMs - timeSinceLastSpin
         const hours = Math.floor(timeLeft / (60 * 60 * 1000))
         const minutes = Math.floor((timeLeft % (60 * 60 * 1000)) / (60 * 1000))
         setTimeUntilNextSpin(`${hours}h ${minutes}m`)
@@ -115,7 +115,7 @@ export function DailySpinWheel({ userId, lastSpinDate, onSpin }: DailySpinWheelP
                 >
                   <div className={`w-full h-full bg-gradient-to-br ${colors[index]} flex items-center justify-center`}>
                     <span className="text-white font-bold text-lg transform -rotate-45 translate-y-6">
-                      ${reward}
+                      {reward}%
                     </span>
                   </div>
                 </div>
@@ -137,7 +137,10 @@ export function DailySpinWheel({ userId, lastSpinDate, onSpin }: DailySpinWheelP
         {wonAmount !== null && (
           <div className="text-center animate-bounce">
             <p className="text-2xl font-bold gradient-text">
-              You Won {formatCurrency(wonAmount)}! 🎉
+              You Won {wonAmount}% Discount! 🎉
+            </p>
+            <p className="text-sm text-muted-foreground mt-2">
+              Use this discount on your next time machine purchase!
             </p>
           </div>
         )}
@@ -163,7 +166,7 @@ export function DailySpinWheel({ userId, lastSpinDate, onSpin }: DailySpinWheelP
 
           {!canSpin && (
             <p className="text-xs text-muted-foreground">
-              Come back tomorrow for another spin!
+              Come back in {timeUntilNextSpin} for another spin!
             </p>
           )}
         </div>
@@ -172,10 +175,10 @@ export function DailySpinWheel({ userId, lastSpinDate, onSpin }: DailySpinWheelP
         <div className="glass-sm p-3 rounded-lg text-xs text-muted-foreground space-y-1">
           <p className="flex items-center gap-2">
             <TrendingUp className="w-3 h-3 text-cyan-400" />
-            Spin once per day for free rewards!
+            Spin once every 72 hours for exclusive discounts!
           </p>
-          <p>• Rewards range from $5 to $100</p>
-          <p>• Build your spin streak for bonus multipliers</p>
+          <p>• Discounts range from 5% to 40%</p>
+          <p>• Apply discount on time machine purchases</p>
         </div>
       </CardContent>
     </Card>

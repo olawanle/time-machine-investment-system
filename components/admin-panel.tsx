@@ -28,7 +28,9 @@ interface AdminPanelProps {
 export function AdminPanel({ onLogout, onBackToDashboard }: AdminPanelProps) {
   const [withdrawalRequests, setWithdrawalRequests] = useState<WithdrawalRequest[]>([])
   const [users, setUsers] = useState<User[]>([])
-  const [activeTab, setActiveTab] = useState<"overview" | "withdrawals" | "users">("overview")
+  const [activeTab, setActiveTab] = useState<"overview" | "withdrawals" | "users" | "settings">("overview")
+  const [payoutStartDay, setPayoutStartDay] = useState(11)
+  const [payoutEndDay, setPayoutEndDay] = useState(15)
   const [stats, setStats] = useState({
     totalUsers: 0,
     totalInvested: 0,

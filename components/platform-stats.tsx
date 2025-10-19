@@ -2,43 +2,46 @@
 
 import { useEffect, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Users, DollarSign, TrendingUp, Activity, Zap, Award } from "lucide-react"
+import { Users, DollarSign, TrendingUp, Activity, Zap } from "lucide-react"
 import { formatCurrency } from "@/lib/utils"
 import { AnimatedCounter } from "./animated-counter"
+import { storage } from "@/lib/storage"
 
 interface PlatformStats {
   totalUsers: number
-  activeUsers24h: number
   totalInvestments: number
-  totalRewardsPaid: number
   totalReferrals: number
-  averageROI: number
 }
 
 export function PlatformStats() {
   const [stats, setStats] = useState<PlatformStats>({
-    totalUsers: 1247,
-    activeUsers24h: 342,
-    totalInvestments: 125000,
-    totalRewardsPaid: 45230,
-    totalReferrals: 523,
-    averageROI: 15.5,
+    totalUsers: 2547, // Fake but realistic
+    totalInvestments: 185000, // Fake but realistic
+    totalReferrals: 823, // Fake but realistic
   })
 
   const [isLive, setIsLive] = useState(true)
 
   useEffect(() => {
-    // Simulate live updates
-    const interval = setInterval(() => {
-      setStats((prev) => ({
-        ...prev,
-        totalUsers: prev.totalUsers + Math.floor(Math.random() * 3),
-        activeUsers24h: prev.activeUsers24h + Math.floor(Math.random() * 2),
-        totalInvestments: prev.totalInvestments + Math.floor(Math.random() * 100),
-        totalRewardsPaid: prev.totalRewardsPaid + Math.floor(Math.random() * 50),
-        totalReferrals: prev.totalReferrals + Math.floor(Math.random() * 2),
-      }))
-    }, 5000) // Update every 5 seconds
+    // Fetch real data and mix with allowed fake metrics
+    const fetchStats = async () => {
+      const allUsers = await storage.getAllUsers()
+      
+      // Calculate real metrics
+      const realInvested = allUsers.reduce((sum, u) => sum + u.totalInvested, 0)
+      
+      // Mix real with fake (for the 3 allowed metrics)
+      setStats({
+        totalUsers: 2547 + allUsers.length, // Fake base + real users
+        totalInvestments: 185000 + realInvested, // Fake base + real investments
+        totalReferrals: 823 + allUsers.reduce((sum, u) => sum + u.referrals.length, 0), // Fake base + real referrals
+      })
+    }
+
+    fetchStats()
+
+    // Update every 30 seconds
+    const interval = setInterval(fetchStats, 30000)
 
     return () => clearInterval(interval)
   }, [])
@@ -58,7 +61,7 @@ export function PlatformStats() {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-3 gap-4">
           {/* Total Users */}
           <div className="glass-sm p-4 rounded-lg space-y-2">
             <div className="flex items-center gap-2">
@@ -67,17 +70,6 @@ export function PlatformStats() {
             </div>
             <p className="text-2xl font-bold text-cyan-400">
               <AnimatedCounter value={stats.totalUsers} />
-            </p>
-          </div>
-
-          {/* Active Users (24h) */}
-          <div className="glass-sm p-4 rounded-lg space-y-2">
-            <div className="flex items-center gap-2">
-              <Zap className="w-4 h-4 text-green-400" />
-              <span className="text-xs text-muted-foreground">Active (24h)</span>
-            </div>
-            <p className="text-2xl font-bold text-green-400">
-              <AnimatedCounter value={stats.activeUsers24h} />
             </p>
           </div>
 
@@ -92,36 +84,14 @@ export function PlatformStats() {
             </p>
           </div>
 
-          {/* Total Rewards Paid */}
-          <div className="glass-sm p-4 rounded-lg space-y-2">
-            <div className="flex items-center gap-2">
-              <DollarSign className="w-4 h-4 text-yellow-400" />
-              <span className="text-xs text-muted-foreground">Rewards Paid</span>
-            </div>
-            <p className="text-2xl font-bold text-yellow-400">
-              <AnimatedCounter value={stats.totalRewardsPaid} prefix="$" />
-            </p>
-          </div>
-
           {/* Total Referrals */}
           <div className="glass-sm p-4 rounded-lg space-y-2">
             <div className="flex items-center gap-2">
               <Users className="w-4 h-4 text-purple-400" />
-              <span className="text-xs text-muted-foreground">Referrals</span>
+              <span className="text-xs text-muted-foreground">Total Referrals</span>
             </div>
             <p className="text-2xl font-bold text-purple-400">
               <AnimatedCounter value={stats.totalReferrals} />
-            </p>
-          </div>
-
-          {/* Average ROI */}
-          <div className="glass-sm p-4 rounded-lg space-y-2">
-            <div className="flex items-center gap-2">
-              <Award className="w-4 h-4 text-emerald-400" />
-              <span className="text-xs text-muted-foreground">Avg ROI</span>
-            </div>
-            <p className="text-2xl font-bold text-emerald-400">
-              <AnimatedCounter value={stats.averageROI} suffix="%" decimals={1} />
             </p>
           </div>
         </div>

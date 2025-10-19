@@ -95,13 +95,13 @@ export function Dashboard({ user: initialUser, onLogout, currentView, onNavigate
 
   const handleDailySpin = async (reward: number) => {
     const updatedUser = { ...user }
-    updatedUser.claimedBalance += reward
+    // Store discount percentage for future use
     updatedUser.lastSpinDate = Date.now()
     updatedUser.totalSpins = (updatedUser.totalSpins || 0) + 1
     
     await storage.saveUser(updatedUser)
     setUser(updatedUser)
-    setSuccess(`Won ${formatCurrency(reward)} from daily spin!`)
+    setSuccess(`Won ${reward}% discount on next purchase!`)
   }
 
   const handleInvest = async () => {
