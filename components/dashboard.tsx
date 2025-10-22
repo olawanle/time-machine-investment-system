@@ -29,9 +29,10 @@ interface DashboardProps {
   currentView: string
   onNavigate: (view: string) => void
   onNavigateToAdmin: () => void
+  useShell?: boolean
 }
 
-export function Dashboard({ user: initialUser, onLogout, currentView, onNavigate, onNavigateToAdmin }: DashboardProps) {
+export function Dashboard({ user: initialUser, onLogout, currentView, onNavigate, onNavigateToAdmin, useShell }: DashboardProps) {
   const [user, setUser] = useState(initialUser)
   const [investAmount, setInvestAmount] = useState("")
   const [withdrawAmount, setWithdrawAmount] = useState("")
@@ -202,6 +203,171 @@ export function Dashboard({ user: initialUser, onLogout, currentView, onNavigate
     setWithdrawAmount("")
     setWalletAddress("")
     setSuccess("Withdrawal request submitted!")
+  }
+
+  if (useShell) {
+    return (
+      <div className="space-y-12">
+        {/* Enhanced Stats Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <AnimatedStatCard
+            title="Total Earnings"
+            value={<AnimatedCounter value={user.claimedBalance} prefix="$" decimals={2} />}
+            description="Ready to withdraw"
+            icon={<TrendingUp className="w-5 h-5" />}
+            gradient="from-cyan-400 to-blue-400"
+            glow="glow-cyan"
+          />
+          <AnimatedStatCard
+            title="Total Investment"
+            value={<AnimatedCounter value={user.balance} prefix="$" decimals={2} />}
+            description="Deployed capital"
+            icon={<Zap className="w-5 h-5" />}
+            gradient="from-blue-400 to-cyan-400"
+            glow="glow-blue"
+          />
+          <AnimatedStatCard
+            title="Referral Bonuses"
+            value={<AnimatedCounter value={user.referrals.length * 50} prefix="$" decimals={2} />}
+            description={`${user.referrals.length} friends invited`}
+            icon={<Users className="w-5 h-5" />}
+            gradient="from-cyan-400 to-emerald-400"
+            glow="glow-cyan"
+          />
+          <AnimatedStatCard
+            title="Active Machines"
+            value={`${user.machines.length}/5`}
+            description="Earning in parallel"
+            icon={<Clock className="w-5 h-5" />}
+            gradient="from-blue-400 to-purple-400"
+            glow="glow-blue"
+          />
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="lg:col-span-2 space-y-8">
+            <div>
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-2xl font-bold">Your Time Machines</h2>
+                <span className="text-sm text-muted-foreground">{user.machines.length} of 5 unlocked</span>
+              </div>
+              {user.machines.length === 0 ? (
+                <Card>
+                  <CardContent className="py-16 text-center">
+                    <Clock className="w-16 h-16 text-cyan-500/40 mx-auto mb-4" />
+                    <p className="text-muted-foreground mb-6 text-lg">No machines yet. Invest to unlock your first machine!</p>
+                    <Button onClick={() => setInvestAmount("100")} className="btn-primary">Invest Now</Button>
+                  </CardContent>
+                </Card>
+              ) : (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {user.machines.map((machine) => (
+                    <TimeMachineCard key={machine.id} machine={machine} user={user} onClaim={handleClaim} onUpdate={setUser} />
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <Card className="overflow-hidden">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Award className="w-5 h-5 text-cyan-500" />
+                  Portfolio Visualization
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="h-64 w-full">
+                  <TimeMachine3D />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          <div className="space-y-6">
+            {suggestions.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <Lightbulb className="w-5 h-5 text-yellow-500" />
+                    Suggestions
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {suggestions.map((suggestion, idx) => (
+                    <div key={idx} className="p-3 rounded-lg border">
+                      <p className="text-sm font-semibold text-foreground">{suggestion.title}</p>
+                      <p className="text-xs text-muted-foreground mt-1">{suggestion.description}</p>
+                      <button className="text-xs text-cyan-600 hover:text-cyan-700 mt-2 font-semibold flex items-center gap-1">
+                        {suggestion.action}
+                        <ArrowUpRight className="w-3 h-3" />
+                      </button>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+            )}
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Zap className="w-5 h-5 text-cyan-500" />
+                  Quick Invest
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <Input type="number" placeholder="Amount ($)" value={investAmount} onChange={(e) => setInvestAmount(e.target.value)} />
+                {error && <p className="text-red-500 text-xs">{error}</p>}
+                {success && <p className="text-green-600 text-xs">{success}</p>}
+                <Button onClick={handleInvest} className="w-full btn-primary">Invest</Button>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <TrendingUp className="w-5 h-5 text-blue-500" />
+                  Withdraw
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <Input type="number" placeholder="Amount ($)" value={withdrawAmount} onChange={(e) => setWithdrawAmount(e.target.value)} />
+                <Input type="text" placeholder="Wallet address" value={walletAddress} onChange={(e) => setWalletAddress(e.target.value)} />
+                <Button onClick={handleWithdraw} className="w-full btn-primary">Withdraw</Button>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Users className="w-5 h-5 text-cyan-500" />
+                  Referral Code
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex gap-2">
+                  <Input value={user.referralCode} readOnly className="font-mono text-xs" />
+                  <Button onClick={() => { navigator.clipboard.writeText(user.referralCode); setSuccess("Copied!") }} size="sm" className="btn-secondary">Copy</Button>
+                </div>
+                <p className="text-xs text-muted-foreground"><span className="text-cyan-600 font-semibold">{user.referrals.length}</span> friends invited</p>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+
+        {/* New Features Section */}
+        <div className="space-y-8">
+          <PlatformStats />
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <DailySpinWheel userId={user.id} lastSpinDate={user.lastSpinDate || 0} onSpin={handleDailySpin} />
+            <ROICalculator />
+          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <Achievements userStats={{ totalInvested: user.totalInvested, totalEarned: user.claimedBalance, machinesOwned: user.machines.length, referralsCount: user.referrals.length, daysActive: Math.floor((Date.now() - user.createdAt) / (1000 * 60 * 60 * 24)) }} />
+            <Leaderboard currentUserId={user.id} currentUsername={user.username} />
+          </div>
+        </div>
+      </div>
+    )
   }
 
   if (currentView === "marketplace") {
