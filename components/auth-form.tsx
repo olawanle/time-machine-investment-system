@@ -131,6 +131,17 @@ export function AuthForm({ onAuthSuccess }: AuthFormProps) {
         <div className="absolute top-20 left-10 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl animate-pulse" />
         <div className="absolute bottom-20 right-10 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl animate-pulse" />
         <div className="absolute top-1/2 left-1/2 w-72 h-72 bg-purple-500/5 rounded-full blur-3xl animate-float" />
+
+        {/* Decorative interface illustration */}
+        <img
+          alt="main interface"
+          width={1200}
+          height={800}
+          decoding="async"
+          loading="lazy"
+          src="https://assets.apidog.com/static/www/assets/images/20250606/debug-on-specs.png"
+          className="auth-debug-illustration absolute right-0 top-10 hidden xl:block"
+        />
       </div>
 
       <Card className="w-full max-w-md glass relative z-10 animate-fade-in">
