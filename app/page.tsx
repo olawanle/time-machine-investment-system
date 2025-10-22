@@ -5,6 +5,10 @@ import { AuthForm } from "@/components/auth-form"
 import { Dashboard } from "@/components/dashboard"
 import { AnalyticsPage } from "@/components/analytics-page"
 import { AdminPanel } from "@/components/admin-panel"
+import { Marketplace } from "@/components/marketplace"
+import { Referrals } from "@/components/referrals"
+import { Settings } from "@/components/settings"
+import { AppShell } from "@/components/app-shell"
 import { type User, storage } from "@/lib/storage"
 
 export default function Home() {
@@ -57,16 +61,28 @@ export default function Home() {
   }
 
   if (view === "analytics") {
+    // legacy full-page layout
     return <AnalyticsPage user={user!} onNavigate={setView} onLogout={handleLogout} />
   }
 
+  // New shell-based layout for authenticated views
   return (
-    <Dashboard
-      user={user!}
-      onLogout={handleLogout}
-      currentView={view}
-      onNavigate={setView}
-      onNavigateToAdmin={() => setView("admin")}
-    />
+    <AppShell user={user!} currentView={view} onNavigate={setView} onLogout={handleLogout} onAdmin={() => setView("admin") }>
+      {view === "dashboard" && (
+        <Dashboard user={user!} onLogout={handleLogout} currentView={view} onNavigate={setView} onNavigateToAdmin={() => setView("admin")} useShell />
+      )}
+      {view === "analytics" && (
+        <AnalyticsPage user={user!} onNavigate={setView} onLogout={handleLogout} useShell />
+      )}
+      {view === "marketplace" && (
+        <Marketplace user={user!} onNavigate={setView} onLogout={handleLogout} useShell />
+      )}
+      {view === "referrals" && (
+        <Referrals user={user!} onNavigate={setView} onLogout={handleLogout} useShell />
+      )}
+      {view === "settings" && (
+        <Settings user={user!} onNavigate={setView} onLogout={handleLogout} useShell />
+      )}
+    </AppShell>
   )
 }
