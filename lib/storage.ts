@@ -12,6 +12,7 @@ export interface User {
   createdAt: number
   tier: "bronze" | "silver" | "gold" | "platinum"
   totalInvested: number
+  totalEarned: number
   roi: number
   lastSpinDate?: number
   spinStreak?: number
@@ -35,6 +36,10 @@ export interface TimeMachine {
   rewardAmount: number
   claimIntervalMs: number
   icon: string
+  investmentAmount: number
+  maxEarnings: number
+  currentEarnings: number
+  roiPercentage: number
 }
 
 export interface WithdrawalRequest {
@@ -64,6 +69,37 @@ export interface Suggestion {
   action: string
   priority: "high" | "medium" | "low"
   createdAt: number
+}
+
+export interface WithdrawalPeriod {
+  id: string
+  startDate: number
+  endDate: number
+  isActive: boolean
+  description: string
+  createdAt: number
+}
+
+export interface AdminSettings {
+  id: string
+  withdrawalPeriods: WithdrawalPeriod[]
+  bitcoinAddress: string
+  minInvestment: number
+  maxInvestment: number
+  defaultRoiPercentage: number
+  systemMaintenance: boolean
+  lastUpdated: number
+}
+
+export interface BitcoinTransaction {
+  id: string
+  userId: string
+  amount: number
+  bitcoinAddress: string
+  transactionHash?: string
+  status: "pending" | "confirmed" | "failed"
+  createdAt: number
+  confirmedAt?: number
 }
 
 import { supabaseStorage } from './supabase-storage'

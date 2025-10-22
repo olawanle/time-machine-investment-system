@@ -6,6 +6,9 @@ import { Dashboard } from "@/components/dashboard"
 import { AnalyticsPage } from "@/components/analytics-page"
 import { AdminPanel } from "@/components/admin-panel"
 import { LandingPage } from "@/components/landing-page"
+import { InvestmentLayout } from "@/components/investment-layout"
+import { ThemeProvider } from "@/components/theme-provider"
+import { APIDashboard } from "@/components/api-dashboard"
 import { ErrorBoundary } from "@/components/ui/error-boundary"
 import { LoadingSpinner } from "@/components/ui/loading-spinner"
 import { type User, storage } from "@/lib/storage"
@@ -13,19 +16,22 @@ import { type User, storage } from "@/lib/storage"
 export default function Home() {
   const [user, setUser] = useState<User | null>(null)
   const [view, setView] = useState<
-    "landing" | "auth" | "dashboard" | "analytics" | "marketplace" | "referrals" | "settings" | "admin"
+    "landing" | "auth" | "dashboard" | "analytics" | "marketplace" | "referrals" | "settings" | "admin" | "api"
   >("landing")
+  const [currentSection, setCurrentSection] = useState("overview")
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
+    setMounted(true)
     const loadUser = async () => {
       try {
         setError(null)
         const currentUser = await storage.getCurrentUser()
         if (currentUser) {
           setUser(currentUser)
-          setView(currentUser.email === "admin@chronostime.com" ? "admin" : "dashboard")
+          setView("api") // Switch to API view after login
         }
       } catch (error) {
         console.error("Error loading user:", error)
@@ -39,7 +45,7 @@ export default function Home() {
 
   const handleAuthSuccess = (newUser: User) => {
     setUser(newUser)
-    setView(newUser.email === "admin@chronostime.com" ? "admin" : "dashboard")
+    setView("api") // Switch to API view after login
   }
 
   const handleLogout = () => {
@@ -48,27 +54,15 @@ export default function Home() {
     setView("landing")
   }
 
-  if (isLoading) {
+  // Prevent hydration mismatch
+  if (!mounted || isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-blue-950 to-slate-950 flex items-center justify-center relative overflow-hidden">
-        {/* Animated background */}
-        <div className="absolute inset-0">
-          <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-500/5 rounded-full blur-3xl animate-pulse" />
-          <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-cyan-500/5 rounded-full blur-3xl animate-pulse" />
-        </div>
-        
-        <div className="text-center space-y-6 relative z-10">
-          <LoadingSpinner size="lg" />
-          
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center space-y-6">
+          <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto"></div>
           <div className="space-y-2">
-            <h2 className="text-2xl font-bold text-white">ChronosTime</h2>
-            <p className="text-cyan-400 font-medium animate-pulse">Initializing secure connection...</p>
-          </div>
-          
-          <div className="flex justify-center space-x-1">
-            <div className="w-2 h-2 bg-cyan-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-            <div className="w-2 h-2 bg-cyan-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-            <div className="w-2 h-2 bg-cyan-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+            <h2 className="text-2xl font-bold text-foreground">ChronosTime</h2>
+            <p className="text-muted-foreground">Loading...</p>
           </div>
         </div>
       </div>
@@ -93,15 +87,71 @@ export default function Home() {
     )
   }
 
-  return (
-    <ErrorBoundary>
-      {view === "landing" && (
-        <LandingPage onGetStarted={() => setView("auth")} />
-      )}
+  // API endpoint data
+  const getEndpointData = (section: string) => {
+    const endpoints = {
+      login: {
+        method: "POST",
+        path: "/auth/login",
+        title: "Login User",
+        description: "Authenticate a user with email and password credentials",
+        parameters: [
+          { name: "email", type: "string", required: true, description: "User's email address", example: "user@example.com" },
+          { name: "password", type: "string", required: true, description: "User's password", example: "password123" }
+        ],
+        responses: [
+          { code: 200, name: "OK", description: "Login successful" },
+          { code: 401, name: "Unauthorized", description: "Invalid credentials" },
+          { code: 400, name: "Bad Request", description: "Invalid request data" }
+        ]
+      },
+      portfolio: {
+        method: "GET",
+        path: "/investment/portfolio",
+        title: "Get Portfolio",
+        description: "Retrieve user's investment portfolio and current holdings",
+        responses: [
+          { code: 200, name: "OK", description: "Portfolio data retrieved successfully" },
+          { code: 401, name: "Unauthorized", description: "User not authenticated" },
+          { code: 404, name: "Not Found", description: "Portfolio not found" }
+        ]
+      },
+      invest: {
+        method: "POST",
+        path: "/investment/create",
+        title: "Create Investment",
+        description: "Create a new investment portfolio with specified amount",
+        parameters: [
+          { name: "amount", type: "number", required: true, description: "Investment amount in USD", example: "1000" },
+          { name: "strategy", type: "string", required: false, description: "Investment strategy", example: "conservative" }
+        ],
+        responses: [
+          { code: 201, name: "Created", description: "Investment created successfully" },
+          { code: 400, name: "Bad Request", description: "Invalid investment amount" },
+          { code: 401, name: "Unauthorized", description: "User not authenticated" }
+        ]
+      }
+    }
+    return endpoints[section as keyof typeof endpoints] || endpoints.login
+  }
 
-      {view === "auth" && (
-        <AuthForm onAuthSuccess={handleAuthSuccess} onBackToLanding={() => setView("landing")} />
-      )}
+  return (
+    <ThemeProvider>
+      <ErrorBoundary>
+        {view === "landing" && (
+          <LandingPage onGetStarted={() => setView("auth")} />
+        )}
+
+        {view === "auth" && (
+          <AuthForm onAuthSuccess={handleAuthSuccess} onBackToLanding={() => setView("landing")} />
+        )}
+
+        {view === "api" && user && (
+          <APIDashboard 
+            user={user}
+            onLogout={handleLogout}
+          />
+        )}
 
       {view === "admin" && user?.email === "admin@chronostime.com" && (
         <AdminPanel onLogout={handleLogout} onBackToDashboard={() => setView("dashboard")} />
@@ -123,7 +173,8 @@ export default function Home() {
           onNavigate={(newView: string) => setView(newView as typeof view)}
           onNavigateToAdmin={() => setView("admin")}
         />
-      )}
-    </ErrorBoundary>
+        )}
+      </ErrorBoundary>
+    </ThemeProvider>
   )
 }

@@ -89,6 +89,10 @@ export const supabaseStorage = {
         rewardAmount: Number(m.reward_amount),
         claimIntervalMs: Number(m.claim_interval_ms),
         icon: m.icon,
+        investmentAmount: Number(m.investment_amount || 0),
+        maxEarnings: Number(m.max_earnings || 0),
+        currentEarnings: Number(m.current_earnings || 0),
+        roiPercentage: Number(m.roi_percentage || 0),
       })) || [],
       referralCode: data.referral_code,
       referredBy: data.referred_by || undefined,
@@ -97,6 +101,7 @@ export const supabaseStorage = {
       createdAt: new Date(data.created_at).getTime(),
       tier: data.tier || 'bronze',
       totalInvested: Number(data.total_invested),
+      totalEarned: Number(data.total_earned || 0),
       roi: Number(data.roi),
     }
   },
@@ -136,6 +141,10 @@ export const supabaseStorage = {
         rewardAmount: Number(m.reward_amount),
         claimIntervalMs: Number(m.claim_interval_ms),
         icon: m.icon,
+        investmentAmount: Number(m.investment_amount || 0),
+        maxEarnings: Number(m.max_earnings || 0),
+        currentEarnings: Number(m.current_earnings || 0),
+        roiPercentage: Number(m.roi_percentage || 0),
       })) || [],
       referralCode: data.referral_code,
       referredBy: data.referred_by || undefined,
@@ -144,6 +153,7 @@ export const supabaseStorage = {
       createdAt: new Date(data.created_at).getTime(),
       tier: data.tier || 'bronze',
       totalInvested: Number(data.total_invested),
+      totalEarned: Number(data.total_earned || 0),
       roi: Number(data.roi),
     }
   },
@@ -170,6 +180,7 @@ export const supabaseStorage = {
       last_withdrawal_date: user.lastWithdrawalDate,
       tier: user.tier,
       total_invested: user.totalInvested,
+      total_earned: user.totalEarned,
       roi: user.roi,
       updated_at: new Date().toISOString(),
     }
@@ -183,7 +194,7 @@ export const supabaseStorage = {
     
     // Update user data
     console.log('📝 Upserting user to database...')
-    const { data: savedUser, error: userError } = await supabase
+    const { data: savedUser, error: userError } = await getSupabaseClient()
       .from('users')
       .upsert(userData, { onConflict: 'id' })
       .select()
@@ -213,6 +224,10 @@ export const supabaseStorage = {
             reward_amount: machine.rewardAmount,
             claim_interval_ms: machine.claimIntervalMs,
             icon: machine.icon,
+            investment_amount: machine.investmentAmount,
+            max_earnings: machine.maxEarnings,
+            current_earnings: machine.currentEarnings,
+            roi_percentage: machine.roiPercentage,
             updated_at: new Date().toISOString(),
           })
         
@@ -256,6 +271,10 @@ export const supabaseStorage = {
         rewardAmount: Number(m.reward_amount),
         claimIntervalMs: Number(m.claim_interval_ms),
         icon: m.icon,
+        investmentAmount: Number(m.investment_amount || 0),
+        maxEarnings: Number(m.max_earnings || 0),
+        currentEarnings: Number(m.current_earnings || 0),
+        roiPercentage: Number(m.roi_percentage || 0),
       })) || [],
       referralCode: data.referral_code,
       referredBy: data.referred_by || undefined,
@@ -264,6 +283,7 @@ export const supabaseStorage = {
       createdAt: new Date(data.created_at).getTime(),
       tier: data.tier || 'bronze',
       totalInvested: Number(data.total_invested),
+      totalEarned: Number(data.total_earned || 0),
       roi: Number(data.roi),
     }
   },
@@ -296,6 +316,10 @@ export const supabaseStorage = {
         rewardAmount: Number(m.reward_amount),
         claimIntervalMs: Number(m.claim_interval_ms),
         icon: m.icon,
+        investmentAmount: Number(m.investment_amount || 0),
+        maxEarnings: Number(m.max_earnings || 0),
+        currentEarnings: Number(m.current_earnings || 0),
+        roiPercentage: Number(m.roi_percentage || 0),
       })) || [],
       referralCode: user.referral_code,
       referredBy: user.referred_by || undefined,
@@ -304,6 +328,7 @@ export const supabaseStorage = {
       createdAt: new Date(user.created_at).getTime(),
       tier: user.tier || 'bronze',
       totalInvested: Number(user.total_invested),
+      totalEarned: Number(user.total_earned || 0),
       roi: Number(user.roi),
     }))
   },
