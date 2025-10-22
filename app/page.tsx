@@ -6,6 +6,8 @@ import { Dashboard } from "@/components/dashboard"
 import { AnalyticsPage } from "@/components/analytics-page"
 import { AdminPanel } from "@/components/admin-panel"
 import { LandingPage } from "@/components/landing-page"
+import { ErrorBoundary } from "@/components/ui/error-boundary"
+import { LoadingSpinner } from "@/components/ui/loading-spinner"
 import { type User, storage } from "@/lib/storage"
 
 export default function Home() {
@@ -14,10 +16,12 @@ export default function Home() {
     "landing" | "auth" | "dashboard" | "analytics" | "marketplace" | "referrals" | "settings" | "admin"
   >("landing")
   const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
     const loadUser = async () => {
       try {
+        setError(null)
         const currentUser = await storage.getCurrentUser()
         if (currentUser) {
           setUser(currentUser)
@@ -25,6 +29,7 @@ export default function Home() {
         }
       } catch (error) {
         console.error("Error loading user:", error)
+        setError("Failed to load user data. Please try again.")
       } finally {
         setIsLoading(false)
       }
@@ -45,38 +50,80 @@ export default function Home() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-blue-950 to-slate-950 flex items-center justify-center">
-        <div className="text-center space-y-4">
-          <div className="w-12 h-12 border-4 border-cyan-500/30 border-t-cyan-500 rounded-full animate-spin mx-auto" />
-          <p className="text-cyan-400 font-semibold">Loading ChronosTime...</p>
+      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-blue-950 to-slate-950 flex items-center justify-center relative overflow-hidden">
+        {/* Animated background */}
+        <div className="absolute inset-0">
+          <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-blue-500/5 rounded-full blur-3xl animate-pulse" />
+          <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-cyan-500/5 rounded-full blur-3xl animate-pulse" />
+        </div>
+        
+        <div className="text-center space-y-6 relative z-10">
+          <LoadingSpinner size="lg" />
+          
+          <div className="space-y-2">
+            <h2 className="text-2xl font-bold text-white">ChronosTime</h2>
+            <p className="text-cyan-400 font-medium animate-pulse">Initializing secure connection...</p>
+          </div>
+          
+          <div className="flex justify-center space-x-1">
+            <div className="w-2 h-2 bg-cyan-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+            <div className="w-2 h-2 bg-cyan-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+            <div className="w-2 h-2 bg-cyan-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+          </div>
         </div>
       </div>
     )
   }
 
-  if (view === "landing") {
-    return <LandingPage onGetStarted={() => setView("auth")} />
-  }
-
-  if (view === "auth") {
-    return <AuthForm onAuthSuccess={handleAuthSuccess} onBackToLanding={() => setView("landing")} />
-  }
-
-  if (view === "admin" && user?.email === "admin@chronostime.com") {
-    return <AdminPanel onLogout={handleLogout} onBackToDashboard={() => setView("dashboard")} />
-  }
-
-  if (view === "analytics") {
-    return <AnalyticsPage user={user!} onNavigate={setView} onLogout={handleLogout} />
+  if (error) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-950 via-blue-950 to-slate-950 flex items-center justify-center p-4">
+        <div className="text-center space-y-4 max-w-md">
+          <div className="text-red-400 text-6xl">⚠️</div>
+          <h2 className="text-2xl font-bold text-white">Connection Error</h2>
+          <p className="text-gray-300">{error}</p>
+          <button 
+            onClick={() => window.location.reload()}
+            className="bg-gradient-to-r from-cyan-500 to-blue-500 hover:from-cyan-600 hover:to-blue-600 text-white font-semibold px-6 py-3 rounded-lg transition-all duration-300"
+          >
+            Retry Connection
+          </button>
+        </div>
+      </div>
+    )
   }
 
   return (
-    <Dashboard
-      user={user!}
-      onLogout={handleLogout}
-      currentView={view}
-      onNavigate={setView}
-      onNavigateToAdmin={() => setView("admin")}
-    />
+    <ErrorBoundary>
+      {view === "landing" && (
+        <LandingPage onGetStarted={() => setView("auth")} />
+      )}
+
+      {view === "auth" && (
+        <AuthForm onAuthSuccess={handleAuthSuccess} onBackToLanding={() => setView("landing")} />
+      )}
+
+      {view === "admin" && user?.email === "admin@chronostime.com" && (
+        <AdminPanel onLogout={handleLogout} onBackToDashboard={() => setView("dashboard")} />
+      )}
+
+      {view === "analytics" && user && (
+        <AnalyticsPage 
+          user={user} 
+          onNavigate={(newView: string) => setView(newView as typeof view)} 
+          onLogout={handleLogout} 
+        />
+      )}
+
+      {(view === "dashboard" || view === "marketplace" || view === "referrals" || view === "settings") && user && (
+        <Dashboard
+          user={user}
+          onLogout={handleLogout}
+          currentView={view}
+          onNavigate={(newView: string) => setView(newView as typeof view)}
+          onNavigateToAdmin={() => setView("admin")}
+        />
+      )}
+    </ErrorBoundary>
   )
 }
