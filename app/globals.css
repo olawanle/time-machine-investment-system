@@ -282,3 +282,24 @@
     animation: page-enter 0.4s ease-out;
   }
 }
+
+/* Auth illustration styles */
+.auth-debug-illustration {
+  animation: fade-right 0.2s ease 0s 1 both;
+  aspect-ratio: 1200 / 800;
+  max-width: 100%;
+  vertical-align: middle;
+  width: 1200px;
+  background-color: #ffffff;
+}
+
+@keyframes fade-right {
+  from {
+    opacity: 0;
+    transform: translateX(-32px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
