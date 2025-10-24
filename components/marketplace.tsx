@@ -250,12 +250,12 @@ export function Marketplace({ user, onNavigate, onLogout }: MarketplaceProps) {
                   <span className="font-semibold text-cyan-400">${selectedMachine.cost}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Bonus:</span>
-                  <span className="font-semibold text-green-400">{selectedMachine.bonus}</span>
+                  <span className="text-muted-foreground">Weekly Return:</span>
+                  <span className="font-semibold text-green-400">${selectedMachine.weeklyReturn}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Duration:</span>
-                  <span className="font-semibold text-blue-400">{selectedMachine.duration}</span>
+                  <span className="text-muted-foreground">Return Rate:</span>
+                  <span className="font-semibold text-blue-400">{selectedMachine.returnRate}</span>
                 </div>
               </div>
 
