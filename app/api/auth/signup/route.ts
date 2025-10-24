@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createClient as createClientBrowser } from '@/lib/supabase/client'
+import { createClient as createAdminClient } from '@supabase/supabase-js'
 
 export async function POST(request: NextRequest) {
   try {
@@ -13,16 +14,28 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Create admin client for auto-confirming users
+    const adminClient = createAdminClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false
+        }
+      }
+    )
+
+    // Create regular client for database operations
     const supabase = await createClient()
 
-    // Sign up user with Supabase Auth
-    const { data: authData, error: authError } = await supabase.auth.signUp({
+    // Sign up user with Supabase Auth and auto-confirm email
+    const { data: authData, error: authError } = await adminClient.auth.admin.createUser({
       email,
       password,
-      options: {
-        data: {
-          username: username || email.split('@')[0],
-        },
+      email_confirm: true, // Auto-confirm email so users can login immediately
+      user_metadata: {
+        username: username || email.split('@')[0],
       },
     })
 
