@@ -7,6 +7,8 @@ export async function POST(request: NextRequest) {
   try {
     const { email, password, username, referralCode } = await request.json()
 
+    console.log('Signup attempt:', { email, hasPassword: !!password, username })
+
     if (!email || !password) {
       return NextResponse.json(
         { error: 'Email and password are required' },
@@ -26,6 +28,8 @@ export async function POST(request: NextRequest) {
       }
     )
 
+    console.log('Admin client created successfully')
+
     // Sign up user with Supabase Auth and auto-confirm email
     const { data: authData, error: authError } = await supabase.auth.admin.createUser({
       email,
@@ -37,6 +41,7 @@ export async function POST(request: NextRequest) {
     })
 
     if (authError) {
+      console.error('Auth creation error:', authError)
       return NextResponse.json(
         { error: authError.message },
         { status: 400 }
