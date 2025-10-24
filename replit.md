@@ -10,6 +10,15 @@ The platform features cryptocurrency payment integration (Bitcoin via NOWPayment
 
 Preferred communication style: Simple, everyday language.
 
+## Recent Changes
+
+**October 24, 2025** - Logo and Time Machine Image Updates:
+- Updated logo component to use `/chronos svg.svg` from public folder
+- Reorganized time machine images to use new PNG files (`time 1.png` through `time 5.png`)
+- Images now ordered from cheapest (Level 1) to most expensive (Level 5)
+- Added dark mode support with `time black 1.png` through `time black 5.png` variants
+- Server configured to run on port 5000 for Replit environment
+
 ## System Architecture
 
 ### Frontend Architecture
