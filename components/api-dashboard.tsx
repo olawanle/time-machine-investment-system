@@ -16,6 +16,8 @@ import { AdvancedDashboard } from "@/components/advanced-dashboard"
 import { AdminDashboard } from "@/components/admin-dashboard"
 import { ModernAdminDashboard } from "@/components/modern-admin-dashboard"
 import { RealUserDashboard } from "@/components/real-user-dashboard"
+import { ModernSidebar } from "@/components/modern-sidebar"
+import { ModernUserDashboard } from "@/components/modern-user-dashboard"
 import { RealAnalytics } from "@/components/real-analytics"
 import { AdminWalletPanel } from "@/components/admin-wallet-panel"
 import { EnhancedBitcoinGateway } from "@/components/enhanced-bitcoin-gateway"
@@ -1406,8 +1408,8 @@ export function APIDashboard({ user, onLogout }: APIDashboardProps) {
       onSectionChange={setCurrentSection}
     >
       {currentSection === "overview" && (
-        <div className="p-4 lg:p-6">
-          <WorkflowOverview 
+        <div className="bg-gradient-to-br from-slate-950 via-blue-950 to-slate-950 min-h-screen">
+          <ModernUserDashboard 
             user={userData}
             onNavigate={setCurrentSection}
           />
