@@ -5,8 +5,8 @@ import { useState, useEffect } from "react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { storage, type User } from "@/lib/storage"
-import { generateId } from "@/lib/utils"
+import { type User } from "@/lib/storage"
+import { authService } from "@/lib/auth-service"
 import { ChronosTimeLogo } from "./logo"
 import { Lock, Mail, UserIcon, Share2, ArrowLeft, Eye, EyeOff } from "lucide-react"
 
@@ -41,93 +41,51 @@ export function AuthForm({ onAuthSuccess, onBackToLanding }: AuthFormProps) {
     setError("")
     setIsLoading(true)
 
-    // Small delay for UX
-    await new Promise(resolve => setTimeout(resolve, 500))
-
     try {
       if (isLogin) {
-        if (email === "admin@chronostime.com" && password === "admin123") {
-          const adminUser: User = {
-            id: "admin-001",
-            email: "admin@chronostime.com",
-            username: "Administrator",
-            balance: 0,
-            claimedBalance: 0,
-            machines: [],
-            referralCode: "ADMIN",
-            referrals: [],
-            lastWithdrawalDate: 0,
-            createdAt: Date.now(),
-            tier: "platinum",
-            totalInvested: 0,
-            roi: 0,
-          }
-          storage.setCurrentUser(adminUser.id)
-          onAuthSuccess(adminUser)
+        // Login with secure API
+        const result = await authService.login(email, password)
+        
+        if (!result.success || !result.user) {
+          setError(result.error || "Invalid email or password")
           setIsLoading(false)
           return
         }
 
-        // Use verifyLogin to check email and password
-        const user = await (storage as any).verifyLogin(email, password)
-        if (!user) {
-          setError("Invalid email or password")
-          setIsLoading(false)
-          return
-        }
-        storage.setCurrentUser(user.id)
-        onAuthSuccess(user)
+        onAuthSuccess(result.user)
       } else {
+        // Signup with secure API
         if (!email || !username || !password) {
           setError("All fields are required")
           setIsLoading(false)
           return
         }
 
-        const users = await storage.getAllUsers()
-        if (users.some((u) => u.email === email)) {
-          setError("Email already registered")
+        if (password.length < 6) {
+          setError("Password must be at least 6 characters")
           setIsLoading(false)
           return
         }
 
-        const newUser: User = {
-          id: generateId(),
-          email,
-          username,
-          balance: 0,
-          claimedBalance: 0,
-          machines: [],
-          referralCode: storage.generateReferralCode(),
-          referrals: [],
-          lastWithdrawalDate: 0,
-          createdAt: Date.now(),
-          tier: "bronze",
-          totalInvested: 0,
-          roi: 0,
-        }
-
-        if (referralCode) {
-          const referrer = users.find((u) => u.referralCode === referralCode)
-          if (referrer) {
-            newUser.referredBy = referrer.id
-            referrer.referrals.push(newUser.id)
-            await storage.saveUser(referrer)
-          }
-        }
-
-        // Save user with password
-        try {
-          await (storage as any).saveUser(newUser, password)
-          console.log('✅ User registration complete')
-          storage.setCurrentUser(newUser.id)
-          onAuthSuccess(newUser)
-        } catch (saveError: any) {
-          console.error('❌ Failed to save user:', saveError)
-          setError(`Registration failed: ${saveError.message || 'Unable to save to database'}`)
+        const result = await authService.signup(email, password, username, referralCode)
+        
+        if (!result.success || !result.user) {
+          setError(result.error || "Registration failed")
           setIsLoading(false)
           return
         }
+
+        // After successful signup, login
+        const loginResult = await authService.login(email, password)
+        
+        if (!loginResult.success || !loginResult.user) {
+          setError("Account created! Please log in.")
+          setIsLogin(true)
+          setIsLoading(false)
+          return
+        }
+
+        onAuthSuccess(loginResult.user)
       }
       setIsLoading(false)
     } catch (error: any) {

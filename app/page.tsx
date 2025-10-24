@@ -12,7 +12,8 @@ import { RealAdminDashboard } from "@/components/real-admin-dashboard"
 import { RealUserDashboard } from "@/components/real-user-dashboard"
 import { ErrorBoundary } from "@/components/ui/error-boundary"
 import { ToastProvider } from "@/components/ui/toast-system"
-import { type User, storage } from "@/lib/storage"
+import { type User } from "@/lib/storage"
+import { authService } from "@/lib/auth-service"
 
 export default function Home() {
   const [user, setUser] = useState<User | null>(null)
@@ -29,7 +30,7 @@ export default function Home() {
     const loadUser = async () => {
       try {
         setError(null)
-        const currentUser = await storage.getCurrentUser()
+        const currentUser = await authService.getCurrentUser()
         if (currentUser) {
           setUser(currentUser)
           setView("api") // Switch to API view after login
@@ -49,8 +50,8 @@ export default function Home() {
     setView("api") // Switch to API view after login
   }
 
-  const handleLogout = () => {
-    localStorage.removeItem("chronostime_current_user")
+  const handleLogout = async () => {
+    await authService.logout()
     setUser(null)
     setView("landing")
   }
