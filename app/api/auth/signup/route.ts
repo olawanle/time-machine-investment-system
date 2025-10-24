@@ -59,11 +59,13 @@ export async function POST(request: NextRequest) {
     const userReferralCode = Math.random().toString(36).substring(2, 8).toUpperCase()
 
     // Create user profile in database using admin client to bypass RLS
-    const { error: profileError } = await supabase
+    console.log('Creating user profile for:', authData.user.id)
+    const { data: insertData, error: profileError } = await supabase
       .from('users')
       .insert({
         id: authData.user.id,
-        email,
+        email: email,
+        name: username || email.split('@')[0],
         username: username || email.split('@')[0],
         balance: 0,
         claimed_balance: 0,
@@ -73,9 +75,14 @@ export async function POST(request: NextRequest) {
         total_invested: 0,
         total_earned: 0,
         roi: 0,
+        is_admin: false,
+        is_suspended: false,
         last_withdrawal_date: 0,
         created_at: new Date().toISOString(),
       })
+      .select()
+    
+    console.log('Profile insert result:', { insertData, profileError })
 
     if (profileError) {
       console.error('Profile creation error:', profileError)
