@@ -8,7 +8,7 @@ export function ChronosTimeLogo() {
     <div className="flex items-center gap-3 group cursor-pointer">
       <div className="w-10 h-10 relative group-hover:scale-110 transition-transform duration-300">
         <Image
-          src="/chronostime_logo-removebg-preview.png"
+          src="/chronos svg.svg"
           alt="ChronosTime Logo"
           fill
           className="object-contain"

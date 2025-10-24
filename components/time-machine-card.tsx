@@ -8,6 +8,7 @@ import type { TimeMachine, User } from "@/lib/storage"
 import type { BaseComponentProps } from "@/lib/component-interfaces"
 import { formatCurrency, formatTime } from "@/lib/utils"
 import { Zap, CheckCircle2, TrendingUp, Clock, DollarSign, Activity } from "lucide-react"
+import { useTheme } from "next-themes"
 
 interface TimeMachineCardProps extends BaseComponentProps {
   machine: TimeMachine
@@ -20,6 +21,7 @@ export function TimeMachineCard({ machine, user, onClaim, onUpdate, className }:
   const [timeUntilClaim, setTimeUntilClaim] = useState(0)
   const [progress, setProgress] = useState(0)
   const { state, setLoading, setError, reset } = useAsyncState()
+  const { theme } = useTheme()
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -49,12 +51,27 @@ export function TimeMachineCard({ machine, user, onClaim, onUpdate, className }:
   }
 
   const portfolioImages = [
-    "/futuristic-time-machine-car.jpg",
-    "/cyan-glowing-time-machine-device.jpg",
-    "/robot-time-machine.jpg",
-    "/advanced-time-machine-technology.jpg",
-    "/holographic-time-machine.jpg",
+    "/time 1.png",
+    "/time 2.png",
+    "/time 3.png",
+    "/time 4.png",
+    "/time 5.png",
   ]
+
+  const portfolioImagesDark = [
+    "/time black 1.png",
+    "/time black 2.png",
+    "/time black 3.png",
+    "/time black 4.png",
+    "/time black 5.png",
+  ]
+
+  const getImageSrc = (level: number) => {
+    const isDark = theme === "dark"
+    const images = isDark ? portfolioImagesDark : portfolioImages
+    const index = level - 1
+    return images[index] || images[0]
+  }
 
   const getPortfolioType = (level: number) => {
     const types = [
@@ -76,7 +93,7 @@ export function TimeMachineCard({ machine, user, onClaim, onUpdate, className }:
     <Card className="glass glow-cyan overflow-hidden hover:border-cyan-400/50 transition-all duration-300 group">
       <div className="h-48 bg-gradient-to-br from-cyan-500/10 to-blue-500/10 flex items-center justify-center overflow-hidden relative">
         <img
-          src={portfolioImages[machine.level - 1] || portfolioImages[0]}
+          src={getImageSrc(machine.level)}
           alt={`Portfolio ${machine.level}`}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
         />
