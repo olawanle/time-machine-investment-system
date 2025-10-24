@@ -14,8 +14,8 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Create admin client for auto-confirming users
-    const adminClient = createAdminClient(
+    // Create admin client for auto-confirming users and bypassing RLS
+    const supabase = createAdminClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY!,
       {
@@ -26,11 +26,8 @@ export async function POST(request: NextRequest) {
       }
     )
 
-    // Create regular client for database operations
-    const supabase = await createClient()
-
     // Sign up user with Supabase Auth and auto-confirm email
-    const { data: authData, error: authError } = await adminClient.auth.admin.createUser({
+    const { data: authData, error: authError } = await supabase.auth.admin.createUser({
       email,
       password,
       email_confirm: true, // Auto-confirm email so users can login immediately
@@ -56,7 +53,7 @@ export async function POST(request: NextRequest) {
     // Generate referral code
     const userReferralCode = Math.random().toString(36).substring(2, 8).toUpperCase()
 
-    // Create user profile in database
+    // Create user profile in database using admin client to bypass RLS
     const { error: profileError } = await supabase
       .from('users')
       .insert({
