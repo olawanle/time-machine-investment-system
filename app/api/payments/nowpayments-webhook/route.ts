@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import crypto from 'crypto'
 
 // Use service role key for webhook (server-to-server)
 const supabase = createClient(
@@ -7,11 +8,44 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
 
+// Verify NOWPayments webhook signature
+function verifyWebhookSignature(payload: string, signature: string | null): boolean {
+  if (!signature) {
+    console.error('No signature provided')
+    return false
+  }
+
+  const ipnSecret = process.env.NOWPAYMENTS_IPN_SECRET
+  if (!ipnSecret) {
+    console.warn('NOWPAYMENTS_IPN_SECRET not configured - webhook verification disabled')
+    return true // Allow in development, but log warning
+  }
+
+  const hmac = crypto.createHmac('sha512', ipnSecret)
+  hmac.update(payload)
+  const calculatedSignature = hmac.digest('hex')
+
+  return calculatedSignature === signature
+}
+
 export async function POST(request: NextRequest) {
   try {
-    const payload = await request.json()
+    // Get raw body for signature verification
+    const body = await request.text()
+    const signature = request.headers.get('x-nowpayments-sig')
 
-    console.log('NOWPayments webhook received:', payload)
+    // Verify webhook signature
+    if (!verifyWebhookSignature(body, signature)) {
+      console.error('Invalid webhook signature')
+      return NextResponse.json(
+        { error: 'Invalid signature' },
+        { status: 401 }
+      )
+    }
+
+    const payload = JSON.parse(body)
+
+    console.log('NOWPayments webhook received (verified):', payload)
 
     // Verify payment status
     if (payload.payment_status !== 'finished') {

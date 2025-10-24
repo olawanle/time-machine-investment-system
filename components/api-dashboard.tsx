@@ -14,7 +14,7 @@ import { NotificationSystem } from "@/components/notification-system"
 import { AchievementSystem } from "@/components/achievement-system"
 import { AdvancedDashboard } from "@/components/advanced-dashboard"
 import { AdminDashboard } from "@/components/admin-dashboard"
-import { RealAdminDashboard } from "@/components/real-admin-dashboard"
+import { EnhancedAdminDashboard } from "@/components/enhanced-admin-dashboard"
 import { RealUserDashboard } from "@/components/real-user-dashboard"
 import { RealAnalytics } from "@/components/real-analytics"
 import { AdminWalletPanel } from "@/components/admin-wallet-panel"
@@ -1457,9 +1457,7 @@ export function APIDashboard({ user, onLogout }: APIDashboardProps) {
       {currentSection === "advanced" && renderAdvancedDashboard()}
       {currentSection === "settings" && renderSettings()}
       {currentSection === "admin" && (
-        <div className="p-4 lg:p-6">
-          <RealAdminDashboard user={userData} onUserUpdate={setUserData} onLogout={onLogout} />
-        </div>
+        <EnhancedAdminDashboard user={userData} onUserUpdate={setUserData} onLogout={onLogout} />
       )}
       {currentSection === "wallet" && (
         <div className="p-4 lg:p-6">

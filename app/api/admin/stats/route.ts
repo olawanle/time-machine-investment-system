@@ -5,11 +5,11 @@ import { createClient } from '@/lib/supabase/server'
 async function isAdmin(supabase: any, userId: string): Promise<boolean> {
   const { data } = await supabase
     .from('users')
-    .select('email')
+    .select('is_admin')
     .eq('id', userId)
     .single()
 
-  return data?.email === 'admin@chronostime.com'
+  return data?.is_admin === true
 }
 
 export async function GET(request: NextRequest) {

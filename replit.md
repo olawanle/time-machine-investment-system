@@ -12,12 +12,35 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
-**October 24, 2025** - Logo and Time Machine Image Updates:
-- Updated logo component to use `/chronos svg.svg` from public folder
-- Reorganized time machine images to use new PNG files (`time 1.png` through `time 5.png`)
-- Images now ordered from cheapest (Level 1) to most expensive (Level 5)
-- Added dark mode support with `time black 1.png` through `time black 5.png` variants
-- Server configured to run on port 5000 for Replit environment
+**October 24, 2025** - Major Security Upgrade & UI/UX Enhancements:
+- **Security Overhaul:**
+  - Implemented secure server-side authentication using Supabase Auth (replaces insecure client-side auth)
+  - Created server-side API routes for all authentication operations (/api/auth/*)
+  - Moved payment processing to secure server-side APIs (/api/payments/*)
+  - Created admin panel APIs with proper authorization (/api/admin/*)
+  - Database schema updated with payment_requests and bitcoin_transactions tables
+  - All sensitive operations now use SUPABASE_SERVICE_ROLE_KEY server-side
+  
+- **Enhanced Admin Dashboard:**
+  - New EnhancedAdminDashboard component with real-time data from secure APIs
+  - Live platform statistics (users, investments, earnings, active machines)
+  - User management with search, filtering, and suspend/activate actions
+  - Withdrawal management with approve/reject functionality
+  - Real data integration replacing mock services
+  
+- **UI/UX Improvements:**
+  - Modern gradient-based design system with glass morphism effects
+  - Responsive statistics cards with real-time data
+  - Improved navigation and user feedback
+  - Better loading states and error handling
+  - Enhanced visual hierarchy and accessibility
+  
+- **Previous Updates:**
+  - Logo component uses `/chronos svg.svg` from public folder
+  - Time machine images organized by price (`time 1.png` through `time 5.png`)
+  - Dark mode support with `time black 1-5.png` variants
+  - Server configured on port 5000 for Replit environment
+  - Fixed Next.js 15 viewport warning (migrated to proper Viewport export)
 
 ## System Architecture
 

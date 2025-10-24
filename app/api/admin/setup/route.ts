@@ -75,6 +75,7 @@ export async function POST(request: NextRequest) {
           total_earned: 0,
           roi: 0,
           last_withdrawal_date: 0,
+          is_admin: true,
         })
 
       if (insertError) {
