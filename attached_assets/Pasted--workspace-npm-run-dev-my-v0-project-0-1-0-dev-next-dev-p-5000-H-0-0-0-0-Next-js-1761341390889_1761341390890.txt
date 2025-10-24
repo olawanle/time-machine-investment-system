@@ -1,0 +1,52 @@
+~/workspace$ npm run dev
+
+> my-v0-project@0.1.0 dev
+> next dev -p 5000 -H 0.0.0.0
+
+   ▲ Next.js 15.2.4
+   - Local:        http://localhost:5000
+   - Network:      http://0.0.0.0:5000
+
+ ✓ Starting...
+ ✓ Ready in 1375ms
+ ○ Compiling / ...
+ ✓ Compiled / in 10.4s (2596 modules)
+ ⚠ Unsupported metadata viewport is configured in metadata export in /. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+Failed to fetch price from https://api.coindesk.com/v1/bpi/currentprice/USD.json TypeError: fetch failed
+    at async CryptoPaymentService.updateBitcoinPrice (lib/crypto-payment-service.ts:242:27)
+  240 |       for (const source of sources) {
+  241 |         try {
+> 242 |           const response = await fetch(source)
+      |                           ^
+  243 |           if (!response.ok) continue
+  244 |
+  245 |           const data = await response.json() {
+  [cause]: [Error: getaddrinfo ENOTFOUND api.coindesk.com] {
+    errno: -3008,
+    code: 'ENOTFOUND',
+    syscall: 'getaddrinfo',
+    hostname: 'api.coindesk.com'
+  }
+}
+ GET / 200 in 11105ms
+Bitcoin price updated: 110939
+ ⚠ Unsupported metadata viewport is configured in metadata export in /. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ GET / 200 in 45ms
+ ✓ Compiled in 473ms (1267 modules)
+ ✓ Compiled in 194ms (1267 modules)
+ ✓ Compiled in 174ms (1267 modules)
+ ⚠ Unsupported metadata viewport is configured in metadata export in /. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ GET / 200 in 64ms
+ ⚠ Unsupported metadata viewport is configured in metadata export in /. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ GET / 200 in 40ms
+ ⚠ Unsupported metadata viewport is configured in metadata export in /. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ GET / 200 in 38ms
+ ⚠ Unsupported metadata viewport is configured in metadata export in /. Please move it to viewport export instead.
+Read more: https://nextjs.org/docs/app/api-reference/functions/generate-viewport
+ GET / 200 in 34ms
+^A^A
