@@ -23,7 +23,7 @@ interface ModernSidebarProps {
 }
 
 export function ModernSidebar({ user, currentSection, onSectionChange, onLogout }: ModernSidebarProps) {
-  const isAdmin = user.email === 'admin@chronostime.com'
+  const isAdmin = (user as any).is_admin === true
 
   const navItems = [
     {

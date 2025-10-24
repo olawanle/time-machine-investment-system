@@ -1403,30 +1403,33 @@ export function APIDashboard({ user, onLogout }: APIDashboardProps) {
   )
 
   return (
-    <IOSLayout 
-      currentSection={currentSection}
-      onSectionChange={setCurrentSection}
-    >
-      {currentSection === "overview" && (
-        <div className="bg-gradient-to-br from-slate-950 via-blue-950 to-slate-950 min-h-screen">
+    <div className="flex h-screen bg-gradient-to-br from-slate-950 via-blue-950 to-slate-950">
+      <ModernSidebar 
+        user={userData}
+        currentSection={currentSection}
+        onSectionChange={setCurrentSection}
+        onLogout={onLogout}
+      />
+      
+      <div className="flex-1 overflow-y-auto">
+        {currentSection === "overview" && (
           <ModernUserDashboard 
             user={userData}
             onNavigate={setCurrentSection}
           />
-        </div>
-      )}
+        )}
       {currentSection === "portfolio" && renderPortfolio()}
       {currentSection === "investment" && renderInvestment()}
       {currentSection === "invest" && renderInvestment()}
-      {currentSection === "marketplace" && (
-        <div className="p-4 lg:p-6">
-          <TimeMachineMarketplace 
-            user={userData}
-            onPurchase={(machineId) => handleMachinePurchase(machineId, 1)}
-            onUserUpdate={setUserData}
-          />
-        </div>
-      )}
+        {currentSection === "marketplace" && (
+          <div className="p-6">
+            <TimeMachineMarketplace 
+              user={userData}
+              onPurchase={(machineId) => handleMachinePurchase(machineId, 1)}
+              onUserUpdate={setUserData}
+            />
+          </div>
+        )}
       {currentSection === "upgrades" && (
         <div className="p-4 lg:p-6">
           <MachineUpgradeSystem 
@@ -1458,23 +1461,24 @@ export function APIDashboard({ user, onLogout }: APIDashboardProps) {
       {currentSection === "achievements" && renderAchievements()}
       {currentSection === "advanced" && renderAdvancedDashboard()}
       {currentSection === "settings" && renderSettings()}
-      {currentSection === "admin" && (
-        <ModernAdminDashboard user={userData} onUserUpdate={setUserData} onLogout={onLogout} />
-      )}
+        {currentSection === "admin" && (
+          <ModernAdminDashboard user={userData} onUserUpdate={setUserData} onLogout={onLogout} />
+        )}
       {currentSection === "wallet" && (
         <div className="p-4 lg:p-6">
           <AdminWalletPanel />
         </div>
       )}
       
-      {!["overview", "portfolio", "investment", "invest", "withdraw", "history", "machines", "claim", "referrals", "analytics", "notifications", "achievements", "advanced", "settings"].includes(currentSection) && (
-        <div className="p-4 lg:p-6">
-          <div className="text-center py-12">
-            <h2 className="text-2xl font-bold text-foreground mb-2">Coming Soon</h2>
-            <p className="text-muted-foreground">This feature is under development.</p>
+        {!["overview", "portfolio", "investment", "invest", "withdraw", "history", "machines", "claim", "referrals", "analytics", "notifications", "achievements", "advanced", "settings", "marketplace", "admin", "wallet"].includes(currentSection) && (
+          <div className="p-4 lg:p-6">
+            <div className="text-center py-12">
+              <h2 className="text-2xl font-bold text-white mb-2">Coming Soon</h2>
+              <p className="text-slate-400">This feature is under development.</p>
+            </div>
           </div>
-        </div>
-      )}
-    </IOSLayout>
+        )}
+      </div>
+    </div>
   )
 }
