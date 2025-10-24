@@ -326,6 +326,7 @@ export function APIDashboard({ user, onLogout }: APIDashboardProps) {
       <RealUserDashboard 
         user={userData}
         onUserUpdate={setUserData}
+        onLogout={onLogout}
       />
     </div>
   )
@@ -1457,7 +1458,7 @@ export function APIDashboard({ user, onLogout }: APIDashboardProps) {
       {currentSection === "settings" && renderSettings()}
       {currentSection === "admin" && (
         <div className="p-4 lg:p-6">
-          <RealAdminDashboard user={userData} onUserUpdate={setUserData} />
+          <RealAdminDashboard user={userData} onUserUpdate={setUserData} onLogout={onLogout} />
         </div>
       )}
       {currentSection === "wallet" && (
