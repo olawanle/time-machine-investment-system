@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Navigation } from "./navigation"
 import { Badge } from "@/components/ui/badge"
-import { ShoppingBag, Zap, X } from "lucide-react"
+import { ShoppingBag, Zap, X, Star, DollarSign, Clock } from "lucide-react"
+import { useTheme } from "next-themes"
 
 interface MarketplaceProps {
   user: User
@@ -16,39 +17,80 @@ interface MarketplaceProps {
 const machines = [
   {
     id: 1,
-    name: "Quantum Leap",
-    cost: 500,
-    bonus: "+15%",
-    duration: "30 Days",
-    rarity: "NEW",
-    image: "/quantum-leap-time-machine.jpg",
+    name: "Time Machine Level 1",
+    cost: 100,
+    weeklyReturn: 20,
+    returnRate: "20%",
+    duration: "Weekly Returns",
+    rarity: "BASIC",
+    image: "/time 1.png",
+    darkImage: "/time black 1.png",
     paymentWidgetId: "5858741736",
+    description: "Entry-level time machine perfect for beginners. Earn $20 weekly returns.",
+    features: ["Basic time manipulation", "Weekly payouts", "Low maintenance"]
   },
   {
     id: 2,
-    name: "Temporal Shift Unit",
-    cost: 800,
-    bonus: "+20%",
-    duration: "45 Days",
-    rarity: "LEGENDARY",
-    image: "/temporal-shift-unit.jpg",
+    name: "Time Machine Level 2",
+    cost: 250,
+    weeklyReturn: 50,
+    returnRate: "20%",
+    duration: "Weekly Returns",
+    rarity: "IMPROVED",
+    image: "/time 2.png",
+    darkImage: "/time black 2.png",
     paymentWidgetId: "4978857735",
+    description: "Enhanced time machine with better efficiency. Earn $50 weekly returns.",
+    features: ["Improved efficiency", "Faster processing", "Better ROI"]
   },
   {
     id: 3,
-    name: "Nova Jumper",
-    cost: 1200,
-    bonus: "+25%",
-    duration: "60 Days",
-    rarity: "POPULAR",
-    image: "/nova-jumper-time-machine.jpg",
+    name: "Time Machine Level 3",
+    cost: 500,
+    weeklyReturn: 100,
+    returnRate: "20%",
+    duration: "Weekly Returns",
+    rarity: "ADVANCED",
+    image: "/time 3.png",
+    darkImage: "/time black 3.png",
     paymentWidgetId: "5075645750",
+    description: "Professional-grade time machine. Earn $100 weekly returns.",
+    features: ["Professional grade", "Advanced algorithms", "Premium support"]
+  },
+  {
+    id: 4,
+    name: "Time Machine Level 4",
+    cost: 750,
+    weeklyReturn: 150,
+    returnRate: "20%",
+    duration: "Weekly Returns",
+    rarity: "ELITE",
+    image: "/time 4.png",
+    darkImage: "/time black 4.png",
+    paymentWidgetId: "5075645751",
+    description: "Elite time machine with maximum efficiency. Earn $150 weekly returns.",
+    features: ["Elite performance", "Maximum efficiency", "Priority support"]
+  },
+  {
+    id: 5,
+    name: "Time Machine Level 5",
+    cost: 1000,
+    weeklyReturn: 200,
+    returnRate: "20%",
+    duration: "Weekly Returns",
+    rarity: "LEGENDARY",
+    image: "/time 5.png",
+    darkImage: "/time black 5.png",
+    paymentWidgetId: "5075645752",
+    description: "Legendary time machine with ultimate power. Earn $200 weekly returns.",
+    features: ["Legendary status", "Ultimate power", "VIP support"]
   },
 ]
 
 export function Marketplace({ user, onNavigate, onLogout }: MarketplaceProps) {
   const [showPaymentModal, setShowPaymentModal] = useState(false)
   const [selectedMachine, setSelectedMachine] = useState<typeof machines[0] | null>(null)
+  const { theme } = useTheme()
 
   const handleViewDetails = (machine: typeof machines[0]) => {
     setSelectedMachine(machine)
@@ -106,31 +148,60 @@ export function Marketplace({ user, onNavigate, onLogout }: MarketplaceProps) {
             >
               <div className="h-56 bg-gradient-to-br from-cyan-500/10 to-blue-500/10 flex items-center justify-center relative overflow-hidden">
                 <img
-                  src={machine.image || "/placeholder.svg"}
+                  src={theme === 'dark' ? machine.darkImage : machine.image}
                   alt={machine.name}
-                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                  className="w-full h-full object-contain group-hover:scale-110 transition-transform duration-300 p-4"
                 />
                 <div className="absolute inset-0 bg-gradient-to-t from-background/60 to-transparent" />
-                <Badge className="absolute top-4 right-4 bg-cyan-500 text-white hover:bg-cyan-600">
+                <Badge className={`absolute top-4 right-4 ${
+                  machine.rarity === 'LEGENDARY' ? 'bg-purple-500 text-white hover:bg-purple-600' :
+                  machine.rarity === 'ELITE' ? 'bg-yellow-500 text-black hover:bg-yellow-600' :
+                  machine.rarity === 'ADVANCED' ? 'bg-blue-500 text-white hover:bg-blue-600' :
+                  machine.rarity === 'IMPROVED' ? 'bg-green-500 text-white hover:bg-green-600' :
+                  'bg-gray-500 text-white hover:bg-gray-600'
+                }`}>
                   {machine.rarity}
                 </Badge>
               </div>
               <CardHeader>
-                <CardTitle className="gradient-text">{machine.name}</CardTitle>
+                <CardTitle className="gradient-text flex items-center gap-2">
+                  <Star className="w-4 h-4 text-yellow-400" />
+                  {machine.name}
+                </CardTitle>
+                <p className="text-sm text-muted-foreground">{machine.description}</p>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="grid grid-cols-3 gap-3 text-sm">
+                <div className="grid grid-cols-2 gap-3 text-sm">
                   <div className="glass-sm p-3 rounded-lg text-center">
                     <p className="text-muted-foreground text-xs">Cost</p>
-                    <p className="font-semibold text-cyan-400 mt-1">${machine.cost}</p>
+                    <p className="font-semibold text-cyan-400 mt-1 flex items-center justify-center gap-1">
+                      <DollarSign className="w-3 h-3" />
+                      ${machine.cost}
+                    </p>
                   </div>
                   <div className="glass-sm p-3 rounded-lg text-center">
-                    <p className="text-muted-foreground text-xs">Bonus</p>
-                    <p className="font-semibold text-green-400 mt-1">{machine.bonus}</p>
+                    <p className="text-muted-foreground text-xs">Weekly Return</p>
+                    <p className="font-semibold text-green-400 mt-1 flex items-center justify-center gap-1">
+                      <DollarSign className="w-3 h-3" />
+                      ${machine.weeklyReturn}
+                    </p>
                   </div>
-                  <div className="glass-sm p-3 rounded-lg text-center">
-                    <p className="text-muted-foreground text-xs">Duration</p>
-                    <p className="font-semibold text-blue-400 mt-1">{machine.duration}</p>
+                </div>
+                <div className="glass-sm p-3 rounded-lg text-center">
+                  <p className="text-muted-foreground text-xs">Return Rate</p>
+                  <p className="font-semibold text-blue-400 mt-1 flex items-center justify-center gap-1">
+                    <Clock className="w-3 h-3" />
+                    {machine.returnRate} Weekly
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <p className="text-xs text-muted-foreground">Features:</p>
+                  <div className="flex flex-wrap gap-1">
+                    {machine.features.map((feature, index) => (
+                      <Badge key={index} variant="secondary" className="text-xs">
+                        {feature}
+                      </Badge>
+                    ))}
                   </div>
                 </div>
                 <Button 

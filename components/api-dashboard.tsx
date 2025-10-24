@@ -14,8 +14,19 @@ import { NotificationSystem } from "@/components/notification-system"
 import { AchievementSystem } from "@/components/achievement-system"
 import { AdvancedDashboard } from "@/components/advanced-dashboard"
 import { AdminDashboard } from "@/components/admin-dashboard"
-import { BitcoinPaymentGateway } from "@/components/bitcoin-payment-gateway"
+import { RealAdminDashboard } from "@/components/real-admin-dashboard"
+import { RealUserDashboard } from "@/components/real-user-dashboard"
+import { RealAnalytics } from "@/components/real-analytics"
+import { AdminWalletPanel } from "@/components/admin-wallet-panel"
+import { EnhancedBitcoinGateway } from "@/components/enhanced-bitcoin-gateway"
+import { paymentManager } from "@/lib/payment-manager"
 import { ActivityFeed } from "@/components/activity-feed"
+import { TimeMachineMarketplace } from "@/components/time-machine-marketplace"
+import { MachineUpgradeSystem } from "@/components/machine-upgrade-system"
+import { InvestmentAnalytics } from "@/components/investment-analytics"
+import { BalanceTopup } from "@/components/balance-topup"
+import { MachineClaiming } from "@/components/machine-claiming"
+import { WorkflowOverview } from "@/components/workflow-overview"
 import { 
   TrendingUp, 
   Zap, 
@@ -107,10 +118,28 @@ export function APIDashboard({ user, onLogout }: APIDashboardProps) {
       return
     }
 
-    // Show Bitcoin payment gateway
-    setPendingInvestment(amount)
-    setShowBitcoinPayment(true)
-    setInvestAmount("")
+    // Create payment request through payment manager
+    try {
+      const result = await paymentManager.processInvestmentPayment(userData.id, amount)
+      if (result.success && result.paymentId) {
+        setPendingInvestment(amount)
+        setShowBitcoinPayment(true)
+        setInvestAmount("")
+      } else {
+        setError(result.error || "Failed to create payment request")
+      }
+    } catch (error) {
+      setError("Failed to initialize payment. Please try again.")
+    }
+  }
+
+  const handleMachinePurchase = async (machineId: number, quantity: number) => {
+    setError("")
+    setSuccess("")
+
+    // This function will be called by the TimeMachineMarketplace component
+    // The actual purchase logic is handled in the marketplace component
+    console.log(`Purchasing machine ${machineId} with quantity ${quantity}`)
   }
 
   const handleBitcoinPaymentConfirmed = async (transaction: any) => {
@@ -293,6 +322,15 @@ export function APIDashboard({ user, onLogout }: APIDashboardProps) {
   }
 
   const renderOverview = () => (
+    <div className="p-4 lg:p-6">
+      <RealUserDashboard 
+        user={userData}
+        onUserUpdate={setUserData}
+      />
+    </div>
+  )
+
+  const renderOverviewOld = () => (
     <div className="p-4 lg:p-6">
       <div className="mb-8">
         <h1 className="text-2xl lg:text-3xl font-bold text-foreground mb-2">Welcome back!</h1>
@@ -602,7 +640,7 @@ export function APIDashboard({ user, onLogout }: APIDashboardProps) {
 
   const renderAnalytics = () => (
     <div className="p-4 lg:p-6">
-      <LiveAnalytics user={userData} />
+      <RealAnalytics user={userData} />
     </div>
   )
 
@@ -744,79 +782,10 @@ export function APIDashboard({ user, onLogout }: APIDashboardProps) {
 
   const renderInvestment = () => (
     <div className="p-4 lg:p-6">
-      <div className="mb-6">
-        <h1 className="text-2xl lg:text-3xl font-bold text-foreground mb-2">Make Investment</h1>
-        <p className="text-muted-foreground">Invest to unlock new time machines and grow your wealth.</p>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Investment Form */}
-        <Card className="bg-card border-border shadow-sm">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <DollarSign className="w-5 h-5 text-primary" />
-              Investment Form
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="text-sm text-muted-foreground">
-              Invest to unlock new time machines (max 5 machines)
-            </div>
-            <Input
-              type="number"
-              placeholder="Investment Amount ($)"
-              value={investAmount}
-              onChange={(e) => setInvestAmount(e.target.value)}
-              className="bg-background border-border"
-            />
-            {error && <p className="text-destructive text-sm">{error}</p>}
-            {success && <p className="text-success text-sm">{success}</p>}
-            <Button 
-              onClick={handleInvest} 
-              className="w-full btn-primary"
-              disabled={!investAmount || Number(investAmount) < 100 || Number(investAmount) > 10000}
-            >
-              Proceed to Bitcoin Payment
-            </Button>
-            <div className="text-xs text-muted-foreground">
-              Current machines: {(userData.machines || []).length}/5
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Bitcoin Payment Gateway */}
-        {showBitcoinPayment && pendingInvestment ? (
-          <BitcoinPaymentGateway
-            amount={pendingInvestment}
-            onPaymentConfirmed={handleBitcoinPaymentConfirmed}
-            onPaymentFailed={handleBitcoinPaymentFailed}
-          />
-        ) : (
-          <Card className="bg-card border-border shadow-sm">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Bitcoin className="w-5 h-5 text-warning" />
-                Bitcoin Payment
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="text-sm text-muted-foreground mb-4">
-                All investments must be made using Bitcoin cryptocurrency
-              </div>
-              
-              <div className="p-4 bg-warning/10 border border-warning/30 rounded-lg">
-                <div className="flex items-center gap-2 mb-2">
-                  <Bitcoin className="w-5 h-5 text-warning" />
-                  <span className="font-medium text-warning">Bitcoin Only</span>
-                </div>
-                <p className="text-sm text-muted-foreground">
-                  Enter an investment amount and click "Proceed to Bitcoin Payment" to continue
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-      </div>
+      <BalanceTopup 
+        user={userData}
+        onUserUpdate={setUserData}
+      />
 
       {/* Active Time Machines */}
       {(userData.machines || []).length > 0 && (
@@ -1435,14 +1404,51 @@ export function APIDashboard({ user, onLogout }: APIDashboardProps) {
       currentSection={currentSection}
       onSectionChange={setCurrentSection}
     >
-      {currentSection === "overview" && renderOverview()}
+      {currentSection === "overview" && (
+        <div className="p-4 lg:p-6">
+          <WorkflowOverview 
+            user={userData}
+            onNavigate={setCurrentSection}
+          />
+        </div>
+      )}
       {currentSection === "portfolio" && renderPortfolio()}
       {currentSection === "investment" && renderInvestment()}
       {currentSection === "invest" && renderInvestment()}
+      {currentSection === "marketplace" && (
+        <div className="p-4 lg:p-6">
+          <TimeMachineMarketplace 
+            user={userData}
+            onPurchase={(machineId) => handleMachinePurchase(machineId, 1)}
+            onUserUpdate={setUserData}
+          />
+        </div>
+      )}
+      {currentSection === "upgrades" && (
+        <div className="p-4 lg:p-6">
+          <MachineUpgradeSystem 
+            user={userData}
+            onUpgrade={(machineId) => handleMachinePurchase(machineId, 1)}
+            onUserUpdate={setUserData}
+          />
+        </div>
+      )}
+      {currentSection === "investment-analytics" && (
+        <div className="p-4 lg:p-6">
+          <InvestmentAnalytics user={userData} />
+        </div>
+      )}
       {currentSection === "withdraw" && renderWithdraw()}
       {currentSection === "history" && renderHistory()}
       {currentSection === "machines" && renderMachines()}
-      {currentSection === "claim" && renderClaim()}
+      {currentSection === "claim" && (
+        <div className="p-4 lg:p-6">
+          <MachineClaiming 
+            user={userData}
+            onUserUpdate={setUserData}
+          />
+        </div>
+      )}
       {currentSection === "referrals" && renderReferrals()}
       {currentSection === "analytics" && renderAnalytics()}
       {currentSection === "notifications" && renderNotifications()}
@@ -1450,7 +1456,14 @@ export function APIDashboard({ user, onLogout }: APIDashboardProps) {
       {currentSection === "advanced" && renderAdvancedDashboard()}
       {currentSection === "settings" && renderSettings()}
       {currentSection === "admin" && (
-        <AdminDashboard user={userData} onUserUpdate={setUserData} />
+        <div className="p-4 lg:p-6">
+          <RealAdminDashboard user={userData} onUserUpdate={setUserData} />
+        </div>
+      )}
+      {currentSection === "wallet" && (
+        <div className="p-4 lg:p-6">
+          <AdminWalletPanel />
+        </div>
       )}
       
       {!["overview", "portfolio", "investment", "invest", "withdraw", "history", "machines", "claim", "referrals", "analytics", "notifications", "achievements", "advanced", "settings"].includes(currentSection) && (

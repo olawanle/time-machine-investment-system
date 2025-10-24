@@ -10,6 +10,8 @@ import { Marketplace } from "./marketplace"
 import { Referrals } from "./referrals"
 import { Settings } from "./settings"
 import { Navigation } from "./navigation"
+import { MachinePortfolio } from "./machine-portfolio"
+import { MachineAnalytics } from "./machine-analytics"
 import { AnimatedStatCard } from "./animated-stat-card"
 import { AnimatedCounter } from "./animated-counter"
 import { TimeMachine3D } from "./time-machine-3d"
@@ -234,6 +236,40 @@ export function Dashboard({ user: initialUser, onLogout, currentView, onNavigate
 
   if (currentView === "settings") {
     return <Settings user={user} onNavigate={onNavigate} onLogout={onLogout} />
+  }
+
+  if (currentView === "portfolio") {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navigation
+          user={user}
+          currentView={currentView}
+          onNavigate={onNavigate}
+          onLogout={onLogout}
+          onAdmin={onNavigateToAdmin}
+        />
+        <main className="max-w-7xl mx-auto px-4 py-12 relative z-10">
+          <MachinePortfolio user={user} onUserUpdate={setUser} />
+        </main>
+      </div>
+    )
+  }
+
+  if (currentView === "analytics") {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navigation
+          user={user}
+          currentView={currentView}
+          onNavigate={onNavigate}
+          onLogout={onLogout}
+          onAdmin={onNavigateToAdmin}
+        />
+        <main className="max-w-7xl mx-auto px-4 py-12 relative z-10">
+          <MachineAnalytics user={user} />
+        </main>
+      </div>
+    )
   }
 
   return (

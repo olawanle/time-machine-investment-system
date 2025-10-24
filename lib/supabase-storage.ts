@@ -3,10 +3,20 @@ import type { User, TimeMachine, WithdrawalRequest, Suggestion } from './storage
 
 // Lazy initialization of Supabase client
 let supabase: ReturnType<typeof createClient> | null = null
+let supabaseError: Error | null = null
 
 const getSupabaseClient = () => {
+  if (supabaseError) {
+    throw supabaseError
+  }
+  
   if (!supabase) {
-    supabase = createClient()
+    try {
+      supabase = createClient()
+    } catch (error) {
+      supabaseError = error instanceof Error ? error : new Error('Failed to create Supabase client')
+      throw supabaseError
+    }
   }
   return supabase
 }

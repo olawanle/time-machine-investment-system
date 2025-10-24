@@ -18,6 +18,8 @@ import {
   Sun,
   Menu,
   X,
+  ShoppingCart,
+  ArrowUp,
   Wallet,
   DollarSign,
   Clock,
@@ -60,8 +62,23 @@ const navigationItems: NavigationItem[] = [
       },
       {
         id: "invest",
-        label: "Make Investment",
-        icon: <DollarSign className="w-4 h-4" />,
+        label: "Top Up Balance",
+        icon: <Wallet className="w-4 h-4" />,
+      },
+      {
+        id: "marketplace",
+        label: "Time Machine Marketplace",
+        icon: <ShoppingCart className="w-4 h-4" />,
+      },
+      {
+        id: "upgrades",
+        label: "Machine Upgrades",
+        icon: <ArrowUp className="w-4 h-4" />,
+      },
+      {
+        id: "investment-analytics",
+        label: "Investment Analytics",
+        icon: <BarChart3 className="w-4 h-4" />,
       },
       {
         id: "withdraw",
@@ -89,6 +106,11 @@ const navigationItems: NavigationItem[] = [
         id: "claim",
         label: "Claim Rewards",
         icon: <DollarSign className="w-4 h-4" />,
+      },
+      {
+        id: "upgrades",
+        label: "Machine Upgrades",
+        icon: <ArrowUp className="w-4 h-4" />,
       },
       {
         id: "analytics",

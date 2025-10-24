@@ -2,7 +2,7 @@
 
 import type { User } from "@/lib/storage"
 import { Button } from "@/components/ui/button"
-import { LayoutDashboard, ShoppingBag, Users, Settings, LogOut, Shield, BarChart3, Bell, User as UserIcon } from "lucide-react"
+import { LayoutDashboard, ShoppingBag, Users, Settings, LogOut, Shield, BarChart3, Bell, User as UserIcon, Briefcase } from "lucide-react"
 
 interface NavigationProps {
   user: User
@@ -53,6 +53,18 @@ export function Navigation({ user, currentView, onNavigate, onLogout, onAdmin }:
             >
               <BarChart3 size={18} />
               Analytics
+            </Button>
+            <Button
+              onClick={() => onNavigate("portfolio")}
+              variant={currentView === "portfolio" ? "default" : "ghost"}
+              className={`gap-2 transition-all ${
+                currentView === "portfolio"
+                  ? "bg-cyan-500/20 text-cyan-400 border border-cyan-400/50"
+                  : "text-muted-foreground hover:text-foreground hover:bg-cyan-500/10"
+              }`}
+            >
+              <Briefcase size={18} />
+              Portfolio
             </Button>
             <Button
               onClick={() => onNavigate("marketplace")}

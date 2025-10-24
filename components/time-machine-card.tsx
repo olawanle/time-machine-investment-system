@@ -3,20 +3,23 @@
 import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { AsyncWrapper, useAsyncState } from "@/components/ui/async-wrapper"
 import type { TimeMachine, User } from "@/lib/storage"
+import type { BaseComponentProps } from "@/lib/component-interfaces"
 import { formatCurrency, formatTime } from "@/lib/utils"
 import { Zap, CheckCircle2, TrendingUp, Clock, DollarSign, Activity } from "lucide-react"
 
-interface TimeMachineCardProps {
+interface TimeMachineCardProps extends BaseComponentProps {
   machine: TimeMachine
   user: User
-  onClaim: (machineId: string) => void
+  onClaim: (machineId: string) => Promise<void>
   onUpdate: (user: User) => void
 }
 
-export function TimeMachineCard({ machine, user, onClaim, onUpdate }: TimeMachineCardProps) {
+export function TimeMachineCard({ machine, user, onClaim, onUpdate, className }: TimeMachineCardProps) {
   const [timeUntilClaim, setTimeUntilClaim] = useState(0)
   const [progress, setProgress] = useState(0)
+  const { state, setLoading, setError, reset } = useAsyncState()
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -33,9 +36,15 @@ export function TimeMachineCard({ machine, user, onClaim, onUpdate }: TimeMachin
 
   const canClaim = timeUntilClaim === 0
 
-  const handleClaim = () => {
-    if (canClaim) {
-      onClaim(machine.id)
+  const handleClaim = async () => {
+    if (!canClaim) return
+    
+    try {
+      setLoading(true, "Claiming reward...")
+      await onClaim(machine.id)
+      reset()
+    } catch (error) {
+      setError(error instanceof Error ? error.message : "Failed to claim reward")
     }
   }
 

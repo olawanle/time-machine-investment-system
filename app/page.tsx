@@ -6,11 +6,12 @@ import { Dashboard } from "@/components/dashboard"
 import { AnalyticsPage } from "@/components/analytics-page"
 import { AdminPanel } from "@/components/admin-panel"
 import { LandingPage } from "@/components/landing-page"
-import { InvestmentLayout } from "@/components/investment-layout"
 import { ThemeProvider } from "@/components/theme-provider"
 import { APIDashboard } from "@/components/api-dashboard"
+import { RealAdminDashboard } from "@/components/real-admin-dashboard"
+import { RealUserDashboard } from "@/components/real-user-dashboard"
 import { ErrorBoundary } from "@/components/ui/error-boundary"
-import { LoadingSpinner } from "@/components/ui/loading-spinner"
+import { ToastProvider } from "@/components/ui/toast-system"
 import { type User, storage } from "@/lib/storage"
 
 export default function Home() {
@@ -137,7 +138,8 @@ export default function Home() {
 
   return (
     <ThemeProvider>
-      <ErrorBoundary>
+      <ToastProvider>
+        <ErrorBoundary>
         {view === "landing" && (
           <LandingPage onGetStarted={() => setView("auth")} />
         )}
@@ -174,7 +176,8 @@ export default function Home() {
           onNavigateToAdmin={() => setView("admin")}
         />
         )}
-      </ErrorBoundary>
+        </ErrorBoundary>
+      </ToastProvider>
     </ThemeProvider>
   )
 }

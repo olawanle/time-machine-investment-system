@@ -103,6 +103,7 @@ export interface BitcoinTransaction {
 }
 
 import { supabaseStorage } from './supabase-storage'
+import { enhancedStorage } from './enhanced-storage'
 
 const STORAGE_KEY = "chronostime_data"
 const USERS_KEY = "chronostime_users"
@@ -110,8 +111,62 @@ const WITHDRAWALS_KEY = "chronostime_withdrawals"
 const REFERRALS_KEY = "chronostime_referrals"
 const SUGGESTIONS_KEY = "chronostime_suggestions"
 
-// Use Supabase for storage - export as default storage
-export const storage = supabaseStorage
+// Enhanced storage wrapper that provides error handling and fallbacks
+export const storage = {
+  // Enhanced methods with error handling
+  async getCurrentUser() {
+    try {
+      const result = await enhancedStorage.getCurrentUser()
+      if (result.success) {
+        return result.data || null
+      }
+      // Fallback to original implementation
+      console.warn('Enhanced storage failed, falling back:', result.error)
+      return supabaseStorage.getCurrentUser()
+    } catch (error) {
+      // If both enhanced and supabase fail, try localStorage
+      console.warn('All storage methods failed, trying localStorage:', error)
+      return localStorageBackup.getCurrentUser()
+    }
+  },
+
+  async saveUser(user: User, password?: string) {
+    try {
+      const result = await enhancedStorage.saveUser(user, password)
+      if (result.success) {
+        return
+      }
+      // Fallback to original implementation
+      console.warn('Enhanced storage failed, falling back:', result.error)
+      return supabaseStorage.saveUser(user, password)
+    } catch (error) {
+      // If both enhanced and supabase fail, save to localStorage
+      console.warn('All storage methods failed, saving to localStorage:', error)
+      localStorageBackup.saveUser(user)
+    }
+  },
+
+  async verifyLogin(email: string, password: string) {
+    const result = await enhancedStorage.verifyLogin(email, password)
+    if (result.success) {
+      return result.data || null
+    }
+    // Fallback to original implementation
+    console.warn('Enhanced storage failed, falling back:', result.error)
+    return supabaseStorage.verifyLogin(email, password)
+  },
+
+  // Delegate other methods to original implementation
+  setCurrentUser: enhancedStorage.setCurrentUser.bind(enhancedStorage),
+  generateReferralCode: enhancedStorage.generateReferralCode.bind(enhancedStorage),
+  getUser: supabaseStorage.getUser,
+  getAllUsers: supabaseStorage.getAllUsers,
+  saveWithdrawalRequest: supabaseStorage.saveWithdrawalRequest,
+  getWithdrawalRequests: supabaseStorage.getWithdrawalRequests,
+  updateWithdrawalRequest: supabaseStorage.updateWithdrawalRequest,
+  saveSuggestion: supabaseStorage.saveSuggestion,
+  getSuggestions: supabaseStorage.getSuggestions,
+}
 
 // Keep localStorage version as backup
 export const localStorageBackup = {

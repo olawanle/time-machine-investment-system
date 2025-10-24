@@ -10,7 +10,6 @@ interface OptimizedImageProps {
   width?: number
   height?: number
   priority?: boolean
-  placeholder?: string
 }
 
 export function OptimizedImage({ 
@@ -19,8 +18,7 @@ export function OptimizedImage({
   className, 
   width, 
   height, 
-  priority = false,
-  placeholder = "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjY2NjIi8+PC9zdmc+"
+  priority = false
 }: OptimizedImageProps) {
   const [isLoading, setIsLoading] = useState(true)
   const [hasError, setHasError] = useState(false)

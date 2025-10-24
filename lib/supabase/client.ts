@@ -4,18 +4,18 @@ export function createClient() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
   const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
 
-  console.log('🔍 Environment variables check:', {
-    url: supabaseUrl ? '✅ Present' : '❌ Missing',
-    key: supabaseAnonKey ? '✅ Present' : '❌ Missing',
-    urlValue: supabaseUrl,
-    keyValue: supabaseAnonKey ? `${supabaseAnonKey.substring(0, 20)}...` : 'undefined'
-  })
+  // Only log in development
+  if (process.env.NODE_ENV === 'development') {
+    console.log('🔍 Environment variables check:', {
+      url: supabaseUrl ? '✅ Present' : '❌ Missing',
+      key: supabaseAnonKey ? '✅ Present' : '❌ Missing'
+    })
+  }
 
   if (!supabaseUrl || !supabaseAnonKey) {
-    console.error('❌ Missing Supabase environment variables:', {
-      NEXT_PUBLIC_SUPABASE_URL: supabaseUrl,
-      NEXT_PUBLIC_SUPABASE_ANON_KEY: supabaseAnonKey ? 'Present' : 'Missing'
-    })
+    if (process.env.NODE_ENV === 'development') {
+      console.warn('⚠️ Missing Supabase environment variables - falling back to localStorage')
+    }
     throw new Error('Missing Supabase environment variables')
   }
 
