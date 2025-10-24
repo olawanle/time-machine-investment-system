@@ -1,5 +1,5 @@
 import type React from "react"
-import type { Metadata } from "next"
+import type { Metadata, Viewport } from "next"
 
 import { Analytics } from "@vercel/analytics/next"
 import { PerformanceMonitor } from "@/components/performance-monitor"
@@ -30,7 +30,11 @@ export const metadata: Metadata = {
     title: "ChronosTime - Professional Investment Platform",
     description: "AI-powered investment strategies with institutional-grade security",
   },
-  viewport: "width=device-width, initial-scale=1",
+}
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
 }
 
 export default function RootLayout({
