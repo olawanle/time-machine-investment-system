@@ -12,14 +12,34 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
-**October 25, 2025** - CPay Payment Integration:
-- **Payment System Overhaul:**
-  - Removed NOWPayments integration completely
-  - Integrated CPay cryptocurrency checkout (https://checkouts.cpay.world)
-  - Created CPay webhook API route for automatic balance updates (/api/payments/cpay-webhook)
-  - Redesigned BalanceTopup component with CPay checkout button
-  - Simplified payment flow - users click "Buy with Crypto" and complete checkout
-  - Removed payment management from admin dashboard
+**October 25, 2025** - CPay Payment Integration (PRODUCTION READY):
+- **Complete Payment System Migration:**
+  - Removed entire NOWPayments integration (API routes, services, components)
+  - Integrated CPay cryptocurrency checkout (https://checkouts.cpay.world/checkout/fdc3a1a4-cb66-4bfe-a93e-6d32670257fa)
+  - Simplified user flow: "Buy with Crypto" → Complete CPay checkout → Balance auto-updates
+  - Removed all payment management from admin dashboard per user request
+  
+- **Production-Grade Webhook Implementation (/api/payments/cpay-webhook):**
+  - HMAC-SHA256 webhook signature verification using CPAY_WEBHOOK_SECRET
+  - Database-backed idempotency via payment_transactions table with unique constraints
+  - Prevents duplicate credits from webhook retries or race conditions
+  - Supports both customer_email and customer_id for user matching
+  - Proper numeric type handling (converts Supabase numeric columns to numbers before arithmetic)
+  - Comprehensive validation: payment status, amount, identifiers
+  - Atomic operations: record transaction → update balance
+  - Full audit trail with raw webhook data storage
+  - Fails closed in production if webhook secret not configured
+  
+- **Database Schema Addition:**
+  - payment_transactions table: tracks all processed payments with unique constraint on payment_id
+  - Columns: id, payment_id (unique), user_id, amount, currency, status, raw_webhook_data, timestamps
+  - Prevents duplicate processing even during server restarts or horizontal scaling
+  
+- **Security Enhancements:**
+  - Constant-time signature comparison prevents timing attacks
+  - Strict validation prevents bypass of idempotency checks
+  - Environment variable CPAY_WEBHOOK_SECRET required for production
+  - Comprehensive error logging with emoji indicators for easy monitoring
   
 **October 24, 2025** - Complete Platform Redesign & Security Upgrade:
 - **Security Overhaul:**
@@ -124,6 +144,7 @@ Preferred communication style: Simple, everyday language.
 - Referrals table: tracks referral relationships
 - Withdrawal requests table: manages withdrawal lifecycle
 - Purchased machines table: marketplace transaction history
+- Payment transactions table: webhook idempotency and payment audit trail (added Oct 25, 2025)
 
 **Local Storage**:
 - Theme preferences stored in localStorage
@@ -160,11 +181,13 @@ Preferred communication style: Simple, everyday language.
 - Both anonymous and service role keys for different access levels
 
 **CPay (Cryptocurrency Checkout)**:
-- Secure cryptocurrency payment processing
+- Production-grade cryptocurrency payment processing
 - Checkout link: https://checkouts.cpay.world/checkout/fdc3a1a4-cb66-4bfe-a93e-6d32670257fa
-- Supports Bitcoin, Ethereum, USDT, USDC, and more
-- Webhook integration for automatic balance updates
-- Instant payment confirmation and balance crediting
+- Supports Bitcoin, Ethereum, USDT, USDC, and other cryptocurrencies
+- Secure webhook integration with signature verification at /api/payments/cpay-webhook
+- Database-backed idempotency prevents duplicate balance credits
+- Instant payment confirmation and automatic balance crediting
+- Requires CPAY_WEBHOOK_SECRET environment variable for production use
 
 **Vercel**:
 - Deployment platform
@@ -208,9 +231,10 @@ Preferred communication style: Simple, everyday language.
 - Address balance checking
 
 **Payment Processing**:
-- NOWPayments REST API for widget embedding
-- Custom Bitcoin payment gateway for direct payments
-- Payment manager service for transaction tracking
+- CPay cryptocurrency checkout integration
+- Webhook-based automatic balance updates
+- Database-backed payment transaction logging and idempotency
+- HMAC-SHA256 signature verification for webhook security
 
 ### Configuration Files
 
