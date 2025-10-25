@@ -21,7 +21,6 @@ import { ModernUserDashboard } from "@/components/modern-user-dashboard"
 import { RealAnalytics } from "@/components/real-analytics"
 import { ActivityFeed } from "@/components/activity-feed"
 import { TimeMachineMarketplace } from "@/components/time-machine-marketplace"
-import { MachineUpgradeSystem } from "@/components/machine-upgrade-system"
 import { InvestmentAnalytics } from "@/components/investment-analytics"
 import { BalanceTopup } from "@/components/balance-topup"
 import { MachineClaiming } from "@/components/machine-claiming"
@@ -1419,11 +1418,20 @@ export function APIDashboard({ user, onLogout }: APIDashboardProps) {
         )}
       {currentSection === "upgrades" && (
         <div className="p-4 lg:p-6">
-          <MachineUpgradeSystem 
-            user={userData}
-            onUpgrade={(machineId) => handleMachinePurchase(machineId, 1)}
-            onUserUpdate={setUserData}
-          />
+          <Card>
+            <CardHeader>
+              <CardTitle>Machine Upgrades</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-white/70">Machine upgrades are now available directly in the Marketplace.</p>
+              <Button 
+                onClick={() => setCurrentSection("marketplace")}
+                className="btn-primary mt-4"
+              >
+                Go to Marketplace
+              </Button>
+            </CardContent>
+          </Card>
         </div>
       )}
       {currentSection === "investment-analytics" && (
