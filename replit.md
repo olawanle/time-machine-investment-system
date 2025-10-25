@@ -1,287 +1,39 @@
 # ChronosTime Investment Platform
 
 ## Overview
-
-ChronosTime is a professional investment platform built with Next.js 15, React 19, and Supabase. The platform enables users to invest in virtual "time machines" that generate passive income through weekly returns. Users can purchase different tiers of time machines, claim rewards, refer friends for bonuses, and track their investment performance through comprehensive analytics.
-
-The platform features cryptocurrency payment integration (Bitcoin via NOWPayments), gamification elements (daily spin wheel, achievements, leaderboards), and a complete admin dashboard for platform management.
+ChronosTime is a professional investment platform enabling users to invest in virtual "time machines" that generate passive income through weekly returns. The platform supports cryptocurrency payments, includes gamification elements, and provides a comprehensive admin dashboard for management. Its core purpose is to offer a unique, engaging investment experience with a focus on a "dark-neon" aesthetic and robust functionality. The business vision is to capture a significant market share in the alternative investment space by combining innovative investment products with a compelling user experience.
 
 ## User Preferences
-
 Preferred communication style: Simple, everyday language.
-
-## Recent Changes
-
-**October 25, 2025** - Phase 1 UI/UX Redesign: Premium Dark-Neon Investment Aesthetic (COMPLETED):
-- **Complete Design System Overhaul:**
-  - Implemented premium color palette across entire platform:
-    * Electric Cyan (#3CE7FF) - primary accent and CTAs
-    * Indigo (#6C63FF) - secondary accent and depth
-    * Gold (#EFBF60) - premium highlights and success states
-    * Deep Space (#020817, #0b1220) - backgrounds and base layers
-  - Created cohesive utility class system in globals.css:
-    * .gradient-text: cyan → indigo → gold gradient
-    * .btn-primary: cyan-to-indigo gradient buttons
-    * .btn-secondary: indigo-to-gold gradient buttons
-    * .text-gradient: 3-color premium gradient
-    * Glow effects: .glow-cyan, .glow-indigo, .glow-gold
-  - Both light and dark theme support configured
-  - Preserved all existing animations and transitions
-  
-- **Brand New Landing Page (Production-Ready):**
-  - Premium hero section with gradient "Time Machines" heading
-  - Trust badges: "Secure & Encrypted" (green), "50K+ Active Users" (cyan), "12% Weekly ROI" (gold)
-  - Live stats banner: $2.5M invested, $450K earned, 98% satisfaction
-  - 6 feature cards with icons and hover effects
-  - 3-step "How It Works" process section
-  - 3 testimonial cards with 5-star ratings and avatars
-  - Final conversion CTA with gradient background
-  - Complete footer with 4 columns (Product, Company, Support, Legal)
-  - Responsive mobile menu with smooth animations
-  - Removed problematic grid.svg reference (eliminated 404s)
-  
-- **Enhanced Authentication Experience:**
-  - Updated auth form background gradients to new palette
-  - Animated orbs now use cyan/indigo/gold colors
-  - Demo admin banner uses electric cyan (#3CE7FF) styling
-  - Eliminated all legacy blue-500 colors
-  - Improved text contrast (white/90) for better accessibility
-  
-- **Quality & Accessibility Improvements:**
-  - Increased text contrast ratios across all pages (white/90 instead of white/70)
-  - Cohesive color application through shared utility classes
-  - Professional, conversion-optimized visual hierarchy
-  - Production-ready landing page for user acquisition
-  - No console errors or missing asset references
-  
-**October 25, 2025** - CPay Payment Integration (PRODUCTION READY):
-- **Complete Payment System Migration:**
-  - Removed entire NOWPayments integration (API routes, services, components)
-  - Integrated CPay cryptocurrency checkout (https://checkouts.cpay.world/checkout/fdc3a1a4-cb66-4bfe-a93e-6d32670257fa)
-  - Simplified user flow: "Buy with Crypto" → Complete CPay checkout → Balance auto-updates
-  - Removed all payment management from admin dashboard per user request
-  
-- **Production-Grade Webhook Implementation (/api/payments/cpay-webhook):**
-  - HMAC-SHA256 webhook signature verification using CPAY_WEBHOOK_SECRET
-  - Database-backed idempotency via payment_transactions table with unique constraints
-  - Prevents duplicate credits from webhook retries or race conditions
-  - Supports both customer_email and customer_id for user matching
-  - Proper numeric type handling (converts Supabase numeric columns to numbers before arithmetic)
-  - Comprehensive validation: payment status, amount, identifiers
-  - Atomic operations: record transaction → update balance
-  - Full audit trail with raw webhook data storage
-  - Fails closed in production if webhook secret not configured
-  
-- **Database Schema Addition:**
-  - payment_transactions table: tracks all processed payments with unique constraint on payment_id
-  - Columns: id, payment_id (unique), user_id, amount, currency, status, raw_webhook_data, timestamps
-  - Prevents duplicate processing even during server restarts or horizontal scaling
-  
-- **Security Enhancements:**
-  - Constant-time signature comparison prevents timing attacks
-  - Strict validation prevents bypass of idempotency checks
-  - Environment variable CPAY_WEBHOOK_SECRET required for production
-  - Comprehensive error logging with emoji indicators for easy monitoring
-  
-**October 24, 2025** - Complete Platform Redesign & Security Upgrade:
-- **Security Overhaul:**
-  - Implemented secure server-side authentication using Supabase Auth (replaces insecure client-side auth)
-  - Created server-side API routes for all authentication operations (/api/auth/*)
-  - Moved payment processing to secure server-side APIs
-  - Created admin panel APIs with proper authorization (/api/admin/*)
-  - All sensitive operations now use SUPABASE_SERVICE_ROLE_KEY server-side
-  
-- **Enhanced Admin Dashboard:**
-  - New EnhancedAdminDashboard component with real-time data from secure APIs
-  - Live platform statistics (users, investments, earnings, active machines)
-  - User management with search, filtering, and suspend/activate actions
-  - Withdrawal management with approve/reject functionality
-  - Real data integration replacing mock services
-  
-- **Complete UI/UX Redesign:**
-  - Brand new modern admin dashboard with intuitive layout
-  - Redesigned user dashboard with visual data representation
-  - Modern sidebar navigation with clear categorization
-  - Dark theme with gradient accents and glass morphism effects
-  - Responsive statistics cards showing real-time platform data
-  - Improved visual hierarchy and accessibility throughout
-  - Better loading states and error handling
-  - Professional card-based layouts for all sections
-  
-- **Previous Updates:**
-  - Logo component uses `/chronos svg.svg` from public folder
-  - Time machine images organized by price (`time 1.png` through `time 5.png`)
-  - Dark mode support with `time black 1-5.png` variants
-  - Server configured on port 5000 for Replit environment
-  - Fixed Next.js 15 viewport warning (migrated to proper Viewport export)
 
 ## System Architecture
 
-### Frontend Architecture
+### UI/UX Decisions
+The platform features a premium "dark-neon" aesthetic with a color palette including Electric Cyan, Indigo, and Gold, set against Deep Space backgrounds. It utilizes a Glass-Morphism effect for cards and other UI elements to enhance the dark theme. The design is responsive, supporting mobile, tablet, and desktop viewports, and includes both light and dark theme support. A complete design system overhaul (Phase 1 UI/UX Redesign) has been implemented, covering everything from color palettes and utility classes to a brand-new, production-ready landing page and enhanced authentication experience.
 
-**Framework**: Next.js 15 with App Router and React 19
-- Server-side rendering and client-side hydration
-- Component-based architecture using React functional components with hooks
-- TypeScript for type safety across the application
-- Responsive design supporting mobile, tablet, and desktop viewports
+### Technical Implementations
+The frontend is built with Next.js 15 (App Router) and React 19, leveraging server-side rendering and client-side hydration. It uses a component-based architecture with TypeScript for type safety. UI components are built on Radix UI primitives and shadcn/ui, styled with Tailwind CSS. State management is handled primarily with local React state. The backend uses Supabase (PostgreSQL) with Row Level Security, custom authentication, and server-side API routes for sensitive operations.
 
-**UI Component Library**: Custom components built on Radix UI primitives
-- shadcn/ui component system following the "new-york" style variant
-- Tailwind CSS for styling with custom CSS variables for theming
-- Support for light/dark themes via data attributes
-- Component aliases configured via `@/components`, `@/lib`, `@/hooks` paths
+### Feature Specifications
+Key features include an authentication system, a dashboard with investment overviews, a time machine marketplace, a referral system, analytics, an admin panel for platform management, and gamification elements like a daily spin wheel and leaderboards. A critical feature is the integration of cryptocurrency payments via CPay, including a secure webhook implementation for automatic balance updates and idempotency.
 
-**State Management**:
-- Local React state (useState, useEffect) for component-level state
-- Custom storage service (`@/lib/storage`) for persistent data management
-- No global state management library - data flows through props and context
-
-**Key Features**:
-- Authentication system with email/password (SHA-256 hashing)
-- Dashboard with investment overview and real-time statistics
-- Time machine marketplace for purchasing investment products
-- Referral system with tracking and bonuses
-- Analytics and reporting dashboards
-- Admin panel for platform management
-- Gamification: daily spin wheel, achievements, leaderboards
-- Bitcoin payment gateway integration
-
-### Backend Architecture
-
-**Database**: Supabase (PostgreSQL)
-- Connection pooling via PgBouncer
-- Row Level Security (RLS) policies enabled for data protection
-- Database schema includes: users, time_machines, referrals, withdrawal_requests, purchased_machines
-
-**Authentication**:
-- Custom authentication system using Supabase
-- Password hashing with SHA-256
-- Session management via Supabase Auth
-- Admin access controlled by email check (admin@chronostime.com)
-
-**Data Layer**:
-- Custom storage service (`@/lib/storage.ts`) abstracts database operations
-- Async/await pattern for all database interactions
-- UUID generation for PostgreSQL compatibility
-- Type-safe interfaces for User, TimeMachine, and related entities
-
-**Business Logic**:
-- Time machine claiming mechanism with configurable intervals
-- Withdrawal request system with 12-day cycles
-- Referral bonus calculations
-- ROI and analytics calculations
-- Auto-sweep monitoring for Bitcoin payments
-
-### Data Storage Solutions
-
-**Primary Database**: Supabase PostgreSQL
-- Hosted on AWS (aws-1-us-east-1)
-- Connection via pooler for performance
-- SSL-required connections
-- Both pooled and direct connection options available
-
-**Schema Design**:
-- Users table: authentication, balances, referral codes, tier levels
-- Time machines table: user-owned machines with claim intervals and rewards
-- Referrals table: tracks referral relationships
-- Withdrawal requests table: manages withdrawal lifecycle
-- Purchased machines table: marketplace transaction history
-- Payment transactions table: webhook idempotency and payment audit trail (added Oct 25, 2025)
-
-**Local Storage**:
-- Theme preferences stored in localStorage
-- Session persistence via Supabase client
-
-### Authentication & Authorization
-
-**User Authentication**:
-- Email/password registration and login
-- Password encryption using SHA-256
-- Supabase Auth for session management
-- Support for referral code signup flow
-
-**Authorization Levels**:
-- Regular users: access to dashboard, marketplace, referrals, settings
-- Admin users: full platform access including admin panel, user management, withdrawal approvals
-- Role determined by email match (admin@chronostime.com)
-
-**Security Measures**:
-- Row Level Security on all database tables
-- Environment variables for sensitive credentials
-- HTTPS-only connections in production
-- JWT-based session tokens via Supabase
+### System Design Choices
+The system prioritizes security with server-side authentication, RLS, and environment variable management for sensitive credentials. Data storage is primarily handled by Supabase PostgreSQL, with a schema designed for users, time machines, referrals, withdrawals, and payment transactions. A custom storage service abstracts database operations, ensuring type safety and asynchronous interactions. The system is designed for high availability and performance, with connection pooling via PgBouncer.
 
 ## External Dependencies
 
 ### Third-Party Services
-
-**Supabase**:
-- PostgreSQL database hosting
-- Authentication service
-- Real-time subscriptions (not currently utilized)
-- Connection details stored in environment variables
-- Both anonymous and service role keys for different access levels
-
-**CPay (Cryptocurrency Checkout)**:
-- Production-grade cryptocurrency payment processing
-- Checkout link: https://checkouts.cpay.world/checkout/fdc3a1a4-cb66-4bfe-a93e-6d32670257fa
-- Supports Bitcoin, Ethereum, USDT, USDC, and other cryptocurrencies
-- Secure webhook integration with signature verification at /api/payments/cpay-webhook
-- Database-backed idempotency prevents duplicate balance credits
-- Instant payment confirmation and automatic balance crediting
-- Requires CPAY_WEBHOOK_SECRET environment variable for production use
-
-**Vercel**:
-- Deployment platform
-- Analytics via @vercel/analytics package
-- Edge network for performance optimization
-- Environment variable management
-
+- **Supabase**: PostgreSQL database, authentication, and real-time services.
+- **CPay**: Cryptocurrency payment gateway for checkout processing and secure webhook integration.
+- **Vercel**: Deployment platform, analytics, and edge network optimization.
 
 ### NPM Packages
-
-**UI & Styling**:
-- @radix-ui/* (v1.x): Accessible UI primitives for components
-- tailwindcss (v3.x): Utility-first CSS framework
-- class-variance-authority: Component variant management
-- clsx: Conditional className utilities
-- lucide-react: Icon library
-
-**Forms & Validation**:
-- react-hook-form: Form state management
-- @hookform/resolvers: Validation schema resolvers
-- zod (likely): Schema validation (inferred from resolver usage)
-
-**Data Visualization**:
-- recharts: Chart components for analytics
-- embla-carousel-react: Carousel/slider components
-
-**Utilities**:
-- date-fns: Date manipulation and formatting
-- canvas-confetti: Celebration animations
-- cmdk: Command menu component
-
-**Supabase Integration**:
-- @supabase/supabase-js: Main Supabase client
-- @supabase/ssr: Server-side rendering support
+- **UI & Styling**: `@radix-ui/*`, `tailwindcss`, `class-variance-authority`, `clsx`, `lucide-react`.
+- **Forms & Validation**: `react-hook-form`, `@hookform/resolvers`, `zod`.
+- **Data Visualization**: `recharts`, `embla-carousel-react`.
+- **Utilities**: `date-fns`, `canvas-confetti`, `cmdk`.
+- **Supabase Integration**: `@supabase/supabase-js`, `@supabase/ssr`.
 
 ### API Integrations
-
-**Cryptocurrency Pricing**:
-- Real-time Bitcoin price fetching (service layer implemented)
-- Transaction confirmation monitoring
-- Address balance checking
-
-**Payment Processing**:
-- CPay cryptocurrency checkout integration
-- Webhook-based automatic balance updates
-- Database-backed payment transaction logging and idempotency
-- HMAC-SHA256 signature verification for webhook security
-
-### Configuration Files
-
-- `components.json`: shadcn/ui configuration (New York style, RSC enabled)
-- `tsconfig.json`: TypeScript compiler options (ES6 target, strict mode)
-- `vercel.json`: Custom install command for legacy peer dependencies
-- `.env.local`: Environment variables for database and API keys (not in repo)
-- `next.config.js`: Next.js configuration (inferred from setup)
+- **CPay API**: For processing cryptocurrency payments and handling secure webhook callbacks.
+- **Cryptocurrency Pricing API**: For fetching real-time Bitcoin prices and monitoring transaction confirmations.
