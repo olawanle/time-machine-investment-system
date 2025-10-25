@@ -60,7 +60,7 @@
   --accent-foreground: #020817;
   --destructive: #ef4444;
   --destructive-foreground: #ffffff;
-  --border: #1e293b;
+  --border: rgba(60, 231, 255, 0.1);
   --input: #0b1220;
   --ring: #3CE7FF;
   --chart-1: #3CE7FF;
@@ -364,13 +364,13 @@
     animation: page-enter 0.4s ease-out;
   }
 
-  /* Beautiful Design System */
+  /* Premium Dark Glass Card System */
   .glass-card {
-    @apply bg-card/80 backdrop-blur-xl border border-border/50 rounded-2xl shadow-lg;
+    @apply bg-gradient-to-br from-[#0b1220]/95 to-[#0b1220]/90 backdrop-blur-2xl border border-[#3CE7FF]/10 rounded-2xl shadow-xl shadow-black/50;
   }
   
   .glass-card:hover {
-    @apply shadow-xl border-border/80;
+    @apply border-[#3CE7FF]/30 shadow-2xl shadow-[#3CE7FF]/10;
   }
   
   .gradient-primary {
