@@ -259,24 +259,24 @@ export function Marketplace({ user, onNavigate, onLogout }: MarketplaceProps) {
                 </div>
               </div>
 
-              {/* Payment Widget */}
-              <div className="rounded-lg overflow-hidden border-2 border-cyan-400/30 bg-white">
-                <iframe 
-                  src={`https://nowpayments.io/embeds/payment-widget?iid=${selectedMachine.paymentWidgetId}`}
-                  width="100%" 
-                  height="420" 
-                  frameBorder="0" 
-                  scrolling="no" 
-                  style={{ overflow: 'hidden' }}
-                  title="NOWPayments Widget"
+              {/* Payment Instructions */}
+              <div className="bg-primary/10 border border-primary/20 rounded-lg p-6 text-center space-y-4">
+                <p className="text-muted-foreground">
+                  To purchase this time machine, please top up your balance first using cryptocurrency.
+                </p>
+                <a
+                  href="https://checkouts.cpay.world/checkout/fdc3a1a4-cb66-4bfe-a93e-6d32670257fa"
+                  target="_blank"
+                  rel="noopener noreferrer"
                 >
-                  Can't load widget
-                </iframe>
+                  <Button className="bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white">
+                    Top Up Balance with Crypto
+                  </Button>
+                </a>
+                <p className="text-xs text-muted-foreground">
+                  After topping up, you can purchase this time machine directly with your balance.
+                </p>
               </div>
-
-              <p className="text-xs text-muted-foreground text-center">
-                Secure payment powered by NOWPayments
-              </p>
             </div>
           </div>
         </div>

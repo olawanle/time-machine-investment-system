@@ -12,13 +12,21 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
 
+**October 25, 2025** - CPay Payment Integration:
+- **Payment System Overhaul:**
+  - Removed NOWPayments integration completely
+  - Integrated CPay cryptocurrency checkout (https://checkouts.cpay.world)
+  - Created CPay webhook API route for automatic balance updates (/api/payments/cpay-webhook)
+  - Redesigned BalanceTopup component with CPay checkout button
+  - Simplified payment flow - users click "Buy with Crypto" and complete checkout
+  - Removed payment management from admin dashboard
+  
 **October 24, 2025** - Complete Platform Redesign & Security Upgrade:
 - **Security Overhaul:**
   - Implemented secure server-side authentication using Supabase Auth (replaces insecure client-side auth)
   - Created server-side API routes for all authentication operations (/api/auth/*)
-  - Moved payment processing to secure server-side APIs (/api/payments/*)
+  - Moved payment processing to secure server-side APIs
   - Created admin panel APIs with proper authorization (/api/admin/*)
-  - Database schema updated with payment_requests and bitcoin_transactions tables
   - All sensitive operations now use SUPABASE_SERVICE_ROLE_KEY server-side
   
 - **Enhanced Admin Dashboard:**
@@ -151,13 +159,12 @@ Preferred communication style: Simple, everyday language.
 - Connection details stored in environment variables
 - Both anonymous and service role keys for different access levels
 
-**NOWPayments (Cryptocurrency Gateway)**:
-- Bitcoin payment processing
-- Payment widgets for three premium machines:
-  - Quantum Leap ($500) - Widget ID: 5858741736
-  - Temporal Shift Unit ($800) - Widget ID: 4978857735
-  - Nova Jumper ($1,200) - Widget ID: 5075645750
-- Webhook integration for payment confirmation (implementation pending)
+**CPay (Cryptocurrency Checkout)**:
+- Secure cryptocurrency payment processing
+- Checkout link: https://checkouts.cpay.world/checkout/fdc3a1a4-cb66-4bfe-a93e-6d32670257fa
+- Supports Bitcoin, Ethereum, USDT, USDC, and more
+- Webhook integration for automatic balance updates
+- Instant payment confirmation and balance crediting
 
 **Vercel**:
 - Deployment platform
@@ -165,10 +172,6 @@ Preferred communication style: Simple, everyday language.
 - Edge network for performance optimization
 - Environment variable management
 
-**Bitcoin Network**:
-- Manual Bitcoin address: bc1q5r2096wsp4fs8c34yt4pwlklvfmdl7vldtyhya
-- Payment monitoring (manual/demo mode currently)
-- HD wallet support planned for production (master public key configured)
 
 ### NPM Packages
 

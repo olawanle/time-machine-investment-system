@@ -19,9 +19,6 @@ import { RealUserDashboard } from "@/components/real-user-dashboard"
 import { ModernSidebar } from "@/components/modern-sidebar"
 import { ModernUserDashboard } from "@/components/modern-user-dashboard"
 import { RealAnalytics } from "@/components/real-analytics"
-import { AdminWalletPanel } from "@/components/admin-wallet-panel"
-import { EnhancedBitcoinGateway } from "@/components/enhanced-bitcoin-gateway"
-import { paymentManager } from "@/lib/payment-manager"
 import { ActivityFeed } from "@/components/activity-feed"
 import { TimeMachineMarketplace } from "@/components/time-machine-marketplace"
 import { MachineUpgradeSystem } from "@/components/machine-upgrade-system"
@@ -120,19 +117,9 @@ export function APIDashboard({ user, onLogout }: APIDashboardProps) {
       return
     }
 
-    // Create payment request through payment manager
-    try {
-      const result = await paymentManager.processInvestmentPayment(userData.id, amount)
-      if (result.success && result.paymentId) {
-        setPendingInvestment(amount)
-        setShowBitcoinPayment(true)
-        setInvestAmount("")
-      } else {
-        setError(result.error || "Failed to create payment request")
-      }
-    } catch (error) {
-      setError("Failed to initialize payment. Please try again.")
-    }
+    // Redirect to CPay checkout
+    setError("Please use the Balance Top-up section to add funds before investing.")
+    return
   }
 
   const handleMachinePurchase = async (machineId: number, quantity: number) => {
@@ -1464,13 +1451,8 @@ export function APIDashboard({ user, onLogout }: APIDashboardProps) {
         {currentSection === "admin" && (
           <ModernAdminDashboard user={userData} onUserUpdate={setUserData} onLogout={onLogout} />
         )}
-      {currentSection === "wallet" && (
-        <div className="p-4 lg:p-6">
-          <AdminWalletPanel />
-        </div>
-      )}
       
-        {!["overview", "portfolio", "investment", "invest", "withdraw", "history", "machines", "claim", "referrals", "analytics", "notifications", "achievements", "advanced", "settings", "marketplace", "admin", "wallet"].includes(currentSection) && (
+        {!["overview", "portfolio", "investment", "invest", "withdraw", "history", "machines", "claim", "referrals", "analytics", "notifications", "achievements", "advanced", "settings", "marketplace", "admin"].includes(currentSection) && (
           <div className="p-4 lg:p-6">
             <div className="text-center py-12">
               <h2 className="text-2xl font-bold text-white mb-2">Coming Soon</h2>
