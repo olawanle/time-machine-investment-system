@@ -96,12 +96,12 @@ export function AuthForm({ onAuthSuccess, onBackToLanding }: AuthFormProps) {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-blue-950 to-slate-950 flex items-center justify-center p-4 relative overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-[#020817] via-[#0b1220] to-[#020817] flex items-center justify-center p-4 relative overflow-hidden">
       {/* Animated background orbs */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-20 left-10 w-96 h-96 bg-cyan-500/10 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute bottom-20 right-10 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl animate-pulse" />
-        <div className="absolute top-1/2 left-1/2 w-72 h-72 bg-purple-500/5 rounded-full blur-3xl animate-float" />
+        <div className="absolute top-20 left-10 w-96 h-96 bg-[#3CE7FF]/10 rounded-full blur-3xl animate-pulse" />
+        <div className="absolute bottom-20 right-10 w-96 h-96 bg-[#6C63FF]/10 rounded-full blur-3xl animate-pulse" />
+        <div className="absolute top-1/2 left-1/2 w-72 h-72 bg-[#EFBF60]/5 rounded-full blur-3xl animate-float" />
       </div>
 
       <Card className="w-full max-w-md glass relative z-10 animate-fade-in">
@@ -210,7 +210,7 @@ export function AuthForm({ onAuthSuccess, onBackToLanding }: AuthFormProps) {
           </div>
 
           {isLogin && (
-            <div className="mt-4 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg text-xs text-blue-300">
+            <div className="mt-4 p-3 bg-[#3CE7FF]/10 border border-[#3CE7FF]/20 rounded-lg text-xs text-[#3CE7FF]">
               Demo Admin: admin@chronostime.com / admin123
             </div>
           )}
