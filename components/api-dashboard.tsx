@@ -15,7 +15,7 @@ import { NotificationSystem } from "@/components/notification-system"
 import { AchievementSystem } from "@/components/achievement-system"
 import { AdvancedDashboard } from "@/components/advanced-dashboard"
 import { AdminDashboard } from "@/components/admin-dashboard"
-import { ModernAdminDashboard } from "@/components/modern-admin-dashboard"
+import { SupremeAdminDashboard } from "@/components/supreme-admin-dashboard"
 import { RealUserDashboard } from "@/components/real-user-dashboard"
 import { ModernSidebar } from "@/components/modern-sidebar"
 import { ModernUserDashboard } from "@/components/modern-user-dashboard"
@@ -1476,7 +1476,11 @@ export function APIDashboard({ user, onLogout }: APIDashboardProps) {
       {currentSection === "advanced" && renderAdvancedDashboard()}
       {currentSection === "settings" && renderSettings()}
         {currentSection === "admin" && (
-          <ModernAdminDashboard user={userData} onUserUpdate={setUserData} onLogout={onLogout} />
+          <SupremeAdminDashboard 
+            user={userData} 
+            onNavigate={(section: string) => setCurrentSection(section)}
+            onLogout={onLogout} 
+          />
         )}
       
         {!["overview", "portfolio", "investment", "invest", "withdraw", "history", "machines", "claim", "referrals", "analytics", "notifications", "achievements", "advanced", "settings", "marketplace", "admin"].includes(currentSection) && (

@@ -55,14 +55,15 @@
   --secondary: #6C63FF;
   --secondary-foreground: #ffffff;
   --muted: #1e293b;
-  --muted-foreground: #94a3b8;
+  --muted-foreground: #cbd5e1; /* Increased from #94a3b8 for better visibility */
   --accent: #EFBF60;
   --accent-foreground: #020817;
   --destructive: #ef4444;
   --destructive-foreground: #ffffff;
-  --border: rgba(60, 231, 255, 0.1);
+  --border: rgba(60, 231, 255, 0.2); /* Increased from 0.1 for better visibility */
   --input: #0b1220;
   --ring: #3CE7FF;
+  --success: #22c55e;
   --chart-1: #3CE7FF;
   --chart-2: #6C63FF;
   --chart-3: #EFBF60;
@@ -74,8 +75,15 @@
   --sidebar-primary-foreground: #020817;
   --sidebar-accent: #0b1220;
   --sidebar-accent-foreground: #f8fafc;
-  --sidebar-border: #1e293b;
+  --sidebar-border: rgba(60, 231, 255, 0.15);
   --sidebar-ring: #3CE7FF;
+  
+  /* Admin-specific theme variables */
+  --admin-background: #0a0118;
+  --admin-card: #1a0b2e;
+  --admin-accent: #ff6b6b;
+  --admin-primary: #a855f7;
+  --admin-border: rgba(168, 85, 247, 0.2);
 }
 
 @theme inline {
@@ -409,5 +417,78 @@
   @keyframes pulse-glow {
     0%, 100% { opacity: 1; }
     50% { opacity: 0.8; }
+  }
+  
+  /* ============================================
+     ADMIN DASHBOARD - UNIQUE PURPLE/RED THEME
+     ============================================ */
+  
+  .admin-theme {
+    background: linear-gradient(135deg, #0a0118 0%, #1a0b2e 100%);
+  }
+  
+  .admin-glass {
+    @apply backdrop-blur-2xl bg-gradient-to-br from-purple-950/50 to-fuchsia-950/30 border border-purple-500/20 rounded-2xl shadow-2xl shadow-purple-500/10;
+  }
+  
+  .admin-glass:hover {
+    @apply border-purple-500/40 shadow-purple-500/20;
+  }
+  
+  .admin-card {
+    @apply bg-gradient-to-br from-[#1a0b2e]/95 to-[#2d1b45]/90 backdrop-blur-xl border border-purple-500/20 rounded-xl shadow-xl;
+  }
+  
+  .admin-badge {
+    @apply bg-gradient-to-r from-purple-600 to-fuchsia-600 text-white px-3 py-1 rounded-full text-xs font-bold shadow-lg shadow-purple-500/30;
+  }
+  
+  .admin-btn-primary {
+    @apply bg-gradient-to-r from-purple-600 to-fuchsia-600 hover:from-purple-500 hover:to-fuchsia-500 text-white font-bold rounded-xl transition-all duration-300 shadow-lg shadow-purple-500/30 hover:shadow-purple-500/50 active:scale-95;
+  }
+  
+  .admin-btn-danger {
+    @apply bg-gradient-to-r from-red-600 to-pink-600 hover:from-red-500 hover:to-pink-500 text-white font-bold rounded-xl transition-all duration-300 shadow-lg shadow-red-500/30 hover:shadow-red-500/50 active:scale-95;
+  }
+  
+  .admin-gradient-text {
+    @apply bg-gradient-to-r from-purple-400 via-fuchsia-400 to-pink-400 bg-clip-text text-transparent;
+  }
+  
+  .admin-glow-purple {
+    @apply shadow-lg shadow-purple-500/25;
+  }
+  
+  .admin-glow-red {
+    @apply shadow-lg shadow-red-500/25;
+  }
+  
+  .admin-border {
+    @apply border border-purple-500/20;
+  }
+  
+  .admin-alert {
+    @apply bg-red-500/10 border border-red-500/30 rounded-lg p-4 shadow-lg shadow-red-500/10;
+  }
+  
+  .admin-success {
+    @apply bg-green-500/10 border border-green-500/30 rounded-lg p-4 shadow-lg shadow-green-500/10;
+  }
+  
+  .admin-warning {
+    @apply bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4 shadow-lg shadow-yellow-500/10;
+  }
+  
+  @keyframes admin-pulse {
+    0%, 100% { 
+      box-shadow: 0 0 20px rgba(168, 85, 247, 0.3);
+    }
+    50% {
+      box-shadow: 0 0 40px rgba(168, 85, 247, 0.5);
+    }
+  }
+  
+  .admin-pulse {
+    animation: admin-pulse 2s ease-in-out infinite;
   }
 }
