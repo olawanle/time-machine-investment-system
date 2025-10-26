@@ -58,31 +58,16 @@ export async function POST(request: NextRequest) {
     // Generate referral code
     const userReferralCode = Math.random().toString(36).substring(2, 8).toUpperCase()
 
-    // Create user profile in database using admin client to bypass RLS
+    // Create user profile using RPC function to bypass schema cache issues
     console.log('Creating user profile for:', authData.user.id)
-    const now = new Date().toISOString()
-    const { data: insertData, error: profileError} = await supabase
-      .from('users')
-      .insert({
-        id: authData.user.id,
-        email: email,
-        name: username || email.split('@')[0],
-        username: username || email.split('@')[0],
-        balance: 0,
-        claimed_balance: 0,
-        referral_code: userReferralCode,
-        referred_by: referralCode || null,
-        tier: 'bronze',
-        total_invested: 0,
-        total_earned: 0,
-        roi: 0,
-        is_admin: false,
-        is_suspended: false,
-        last_withdrawal_date: 0,
-        created_at: now,
-        updated_at: now,
-      })
-      .select()
+    const { data: insertData, error: profileError } = await supabase.rpc('create_user_profile', {
+      p_id: authData.user.id,
+      p_email: email,
+      p_name: username || email.split('@')[0],
+      p_username: username || email.split('@')[0],
+      p_referral_code: userReferralCode,
+      p_referred_by: referralCode || null,
+    })
     
     console.log('Profile insert result:', { insertData, profileError })
 
@@ -91,7 +76,7 @@ export async function POST(request: NextRequest) {
       // Delete auth user if profile creation fails
       await supabase.auth.admin.deleteUser(authData.user.id)
       return NextResponse.json(
-        { error: 'Failed to create user profile' },
+        { error: 'Failed to create user profile. Please contact support.' },
         { status: 500 }
       )
     }

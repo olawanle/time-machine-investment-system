@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Use admin client to fetch profile (bypasses RLS issues)
+    // Use RPC function to fetch profile (bypasses schema cache issues)
     if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
       console.error('SUPABASE_SERVICE_ROLE_KEY is not configured')
       return NextResponse.json(
@@ -49,20 +49,13 @@ export async function POST(request: NextRequest) {
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     )
 
-    // Get user profile
-    let { data: profile, error: profileError } = await adminClient
-      .from('users')
-      .select(`
-        *,
-        time_machines(*),
-        referrals:referrals!referrer_id(*)
-      `)
-      .eq('id', authData.user.id)
-      .single()
+    // Get user profile using RPC function
+    const { data: profileData, error: profileError } = await adminClient.rpc('get_user_profile', {
+      p_user_id: authData.user.id
+    })
 
     // If profile doesn't exist, it means the user was created but profile creation failed
-    // This shouldn't happen in normal flow, return error
-    if (profileError || !profile) {
+    if (profileError || !profileData) {
       console.error('User profile not found for authenticated user:', authData.user.id)
       console.error('Profile error:', profileError)
       
@@ -75,39 +68,41 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    const profile = profileData as any
+
     return NextResponse.json({
       success: true,
       user: {
         id: profile.id,
         email: profile.email,
         username: profile.username || profile.email.split('@')[0],
-        balance: Number(profile.balance),
-        claimedBalance: Number(profile.claimed_balance),
-        machines: profile.time_machines?.map((m: any) => ({
+        balance: Number(profile.balance || 0),
+        claimedBalance: Number(profile.claimed_balance || 0),
+        machines: Array.isArray(profile.time_machines) ? profile.time_machines.map((m: any) => ({
           id: m.id,
           level: m.level,
           name: m.name,
           description: m.description,
-          unlockedAt: Number(m.unlocked_at),
-          lastClaimedAt: Number(m.last_claimed_at),
+          unlockedAt: Number(m.unlocked_at || 0),
+          lastClaimedAt: Number(m.last_claimed_at || 0),
           isActive: m.is_active,
-          rewardAmount: Number(m.reward_amount),
-          claimIntervalMs: Number(m.claim_interval_ms),
+          rewardAmount: Number(m.reward_amount || 0),
+          claimIntervalMs: Number(m.claim_interval_ms || 0),
           icon: m.icon,
           investmentAmount: Number(m.investment_amount || 0),
           maxEarnings: Number(m.max_earnings || 0),
           currentEarnings: Number(m.current_earnings || 0),
           roiPercentage: Number(m.roi_percentage || 0),
-        })) || [],
+        })) : [],
         referralCode: profile.referral_code,
         referredBy: profile.referred_by || undefined,
-        referrals: profile.referrals?.map((r: any) => r.referred_user_id) || [],
-        lastWithdrawalDate: Number(profile.last_withdrawal_date),
-        createdAt: new Date(profile.created_at).getTime(),
+        referrals: Array.isArray(profile.referrals) ? profile.referrals : [],
+        lastWithdrawalDate: Number(profile.last_withdrawal_date || 0),
+        createdAt: Number(profile.created_at || Date.now()),
         tier: profile.tier || 'bronze',
-        totalInvested: Number(profile.total_invested),
+        totalInvested: Number(profile.total_invested || 0),
         totalEarned: Number(profile.total_earned || 0),
-        roi: Number(profile.roi),
+        roi: Number(profile.roi || 0),
       },
     })
   } catch (error) {

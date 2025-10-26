@@ -56,7 +56,7 @@ INSERT INTO public.users (
   balance, 
   claimed_balance, 
   total_invested, 
-  total_earned, 
+  total_earned,
   roi, 
   tier, 
   referral_code, 
