@@ -13,7 +13,7 @@ DO $$
 DECLARE
   v_user_id UUID;
   v_email TEXT := 'goconnect234@gmail.com';
-  v_username TEXT := 'goconnect234';
+  v_username TEXT := 'goconnect';
   v_referral_code TEXT := UPPER(SUBSTRING(MD5(random()::text) FROM 1 FOR 8));
 BEGIN
   -- Get the auth user ID
