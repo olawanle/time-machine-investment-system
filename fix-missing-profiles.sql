@@ -70,13 +70,14 @@ SELECT
   mu.id,
   mu.email,
   mu.base_username as name,
-  -- Make username unique: append sequence number if duplicate or exists
+  -- Make username unique: use plain username for first occurrence if not exists, otherwise append hash
   CASE 
     WHEN mu.username_sequence = 1 AND NOT EXISTS (
       SELECT 1 FROM existing_usernames WHERE username = mu.base_username
     )
     THEN mu.base_username
-    ELSE mu.base_username || '_' || SUBSTRING(MD5(mu.id::text) FROM 1 FOR 4)
+    -- Use 8-char MD5 hash of user ID for guaranteed uniqueness
+    ELSE mu.base_username || '_' || UPPER(SUBSTRING(MD5(mu.id::text) FROM 1 FOR 8))
   END as username,
   0 as balance,
   0 as claimed_balance,
