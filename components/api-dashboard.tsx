@@ -15,7 +15,7 @@ import { NotificationSystem } from "@/components/notification-system"
 import { AchievementSystem } from "@/components/achievement-system"
 import { AdvancedDashboard } from "@/components/advanced-dashboard"
 import { AdminDashboard } from "@/components/admin-dashboard"
-import { SupremeAdminDashboard } from "@/components/supreme-admin-dashboard"
+import { AdminCommandCenter } from "@/components/admin-command-center"
 import { RealUserDashboard } from "@/components/real-user-dashboard"
 import { ModernSidebar } from "@/components/modern-sidebar"
 import { ModernUserDashboard } from "@/components/modern-user-dashboard"
@@ -26,6 +26,9 @@ import { InvestmentAnalytics } from "@/components/investment-analytics"
 import { BalanceTopup } from "@/components/balance-topup"
 import { MachineClaiming } from "@/components/machine-claiming"
 import { WorkflowOverview } from "@/components/workflow-overview"
+import { MobileNavigation } from "@/components/mobile-navigation"
+import { LiveUserCounter, TransactionTicker, SecurityBadges } from "@/components/trust-indicators"
+import { InvestmentProgress, AchievementToast } from "@/components/engagement-features"
 import { 
   TrendingUp, 
   Zap, 
@@ -1390,20 +1393,44 @@ export function APIDashboard({ user, onLogout }: APIDashboardProps) {
   )
 
   return (
-    <div className="flex h-screen bg-gradient-to-br from-slate-950 via-blue-950 to-slate-950">
-      <ModernSidebar 
-        user={userData}
-        currentSection={currentSection}
-        onSectionChange={setCurrentSection}
-        onLogout={onLogout}
-      />
+    <div className="flex h-screen bg-gradient-to-br from-slate-950 via-blue-950 to-slate-950 relative">
+      {/* Desktop Sidebar */}
+      <div className="hidden lg:block">
+        <ModernSidebar 
+          user={userData}
+          currentSection={currentSection}
+          onSectionChange={setCurrentSection}
+          onLogout={onLogout}
+        />
+      </div>
       
-      <div className="flex-1 overflow-y-auto">
+      {/* Mobile Navigation - Bottom Tab Bar */}
+      <div className="lg:hidden">
+        <MobileNavigation 
+          currentView={currentSection}
+          onNavigate={setCurrentSection}
+          notifications={3}
+          rewards={2}
+        />
+      </div>
+      
+      <div className="flex-1 overflow-y-auto pb-20 lg:pb-0">
         {currentSection === "overview" && (
-          <ModernUserDashboard 
-            user={userData}
-            onNavigate={setCurrentSection}
-          />
+          <div className="space-y-6">
+            {/* Trust Indicators Bar */}
+            <div className="bg-gradient-to-r from-purple-900/20 to-blue-900/20 border-b border-purple-500/20 p-4">
+              <div className="flex flex-wrap gap-4 items-center justify-center lg:justify-between">
+                <LiveUserCounter />
+                <TransactionTicker />
+                <SecurityBadges />
+              </div>
+            </div>
+            
+            <ModernUserDashboard 
+              user={userData}
+              onNavigate={setCurrentSection}
+            />
+          </div>
         )}
       {currentSection === "wallet" && (
         <div className="p-6 space-y-6">
@@ -1476,10 +1503,9 @@ export function APIDashboard({ user, onLogout }: APIDashboardProps) {
       {currentSection === "advanced" && renderAdvancedDashboard()}
       {currentSection === "settings" && renderSettings()}
         {currentSection === "admin" && (
-          <SupremeAdminDashboard 
-            user={userData} 
-            onNavigate={(section: string) => setCurrentSection(section)}
-            onLogout={onLogout} 
+          <AdminCommandCenter 
+            user={userData}
+            onLogout={onLogout}
           />
         )}
       
