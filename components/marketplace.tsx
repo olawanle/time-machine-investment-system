@@ -265,7 +265,7 @@ export function Marketplace({ user, onNavigate, onLogout }: MarketplaceProps) {
                   To purchase this time machine, please top up your balance first using cryptocurrency.
                 </p>
                 <a
-                  href="https://checkouts.cpay.world/checkout/fdc3a1a4-cb66-4bfe-a93e-6d32670257fa"
+                  href="https://checkouts.cpay.world/checkout/acb26bab-0d68-4ffa-b9f9-5ad577762fc7"
                   target="_blank"
                   rel="noopener noreferrer"
                 >
