@@ -60,7 +60,8 @@ export async function POST(request: NextRequest) {
 
     // Create user profile in database using admin client to bypass RLS
     console.log('Creating user profile for:', authData.user.id)
-    const { data: insertData, error: profileError } = await supabase
+    const now = new Date().toISOString()
+    const { data: insertData, error: profileError} = await supabase
       .from('users')
       .insert({
         id: authData.user.id,
@@ -78,7 +79,8 @@ export async function POST(request: NextRequest) {
         is_admin: false,
         is_suspended: false,
         last_withdrawal_date: 0,
-        created_at: new Date().toISOString(),
+        created_at: now,
+        updated_at: now,
       })
       .select()
     

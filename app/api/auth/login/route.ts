@@ -45,47 +45,19 @@ export async function POST(request: NextRequest) {
       .eq('id', authData.user.id)
       .single()
 
-    // Auto-create profile if it doesn't exist (handles legacy users or profile creation failures)
+    // If profile doesn't exist, it means the user was created but profile creation failed
+    // This shouldn't happen in normal flow, return error
     if (profileError || !profile) {
-      console.log('Profile not found, creating profile for user:', authData.user.id)
+      console.error('User profile not found for authenticated user:', authData.user.id)
+      console.error('Profile error:', profileError)
       
-      // Generate referral code
-      const userReferralCode = Math.random().toString(36).substring(2, 10).toUpperCase()
+      // Sign out the incomplete user
+      await supabase.auth.signOut()
       
-      const { data: newProfile, error: createError } = await supabase
-        .from('users')
-        .insert({
-          id: authData.user.id,
-          email: authData.user.email!,
-          username: authData.user.email!.split('@')[0],
-          balance: 0,
-          claimed_balance: 0,
-          referral_code: userReferralCode,
-          tier: 'bronze',
-          total_invested: 0,
-          total_earned: 0,
-          roi: 0,
-          is_admin: false,
-          is_suspended: false,
-          last_withdrawal_date: 0,
-          created_at: new Date().toISOString(),
-        })
-        .select(`
-          *,
-          time_machines(*),
-          referrals:referrals!referrer_id(*)
-        `)
-        .single()
-
-      if (createError) {
-        console.error('Failed to create profile on login:', createError)
-        return NextResponse.json(
-          { error: 'Failed to initialize user profile' },
-          { status: 500 }
-        )
-      }
-      
-      profile = newProfile
+      return NextResponse.json(
+        { error: 'Account setup incomplete. Please contact support or try signing up again.' },
+        { status: 404 }
+      )
     }
 
     return NextResponse.json({
