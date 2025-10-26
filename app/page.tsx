@@ -33,7 +33,12 @@ export default function Home() {
         const currentUser = await authService.getCurrentUser()
         if (currentUser) {
           setUser(currentUser)
-          setView("api") // Switch to API view after login
+          // Check if user is admin and redirect accordingly
+          if (currentUser.email === "admin@chronostime.com") {
+            setView("admin")
+          } else {
+            setView("api") // Switch to API view after login
+          }
         }
       } catch (error) {
         console.error("Error loading user:", error)
@@ -47,7 +52,12 @@ export default function Home() {
 
   const handleAuthSuccess = (newUser: User) => {
     setUser(newUser)
-    setView("api") // Switch to API view after login
+    // Check if user is admin and redirect accordingly
+    if (newUser.email === "admin@chronostime.com") {
+      setView("admin")
+    } else {
+      setView("api") // Switch to API view after login
+    }
   }
 
   const handleLogout = async () => {

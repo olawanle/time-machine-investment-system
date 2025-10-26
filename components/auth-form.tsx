@@ -209,11 +209,7 @@ export function AuthForm({ onAuthSuccess, onBackToLanding }: AuthFormProps) {
             </button>
           </div>
 
-          {isLogin && (
-            <div className="mt-4 p-3 bg-[#3CE7FF]/10 border border-[#3CE7FF]/20 rounded-lg text-xs text-[#3CE7FF]">
-              Demo Admin: admin@chronostime.com / admin123
-            </div>
-          )}
+
         </CardContent>
       </Card>
     </div>

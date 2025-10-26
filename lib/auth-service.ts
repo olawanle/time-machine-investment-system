@@ -1,6 +1,22 @@
 import type { User } from './storage'
 
 export const authService = {
+  async ensureAdminSetup(): Promise<void> {
+    try {
+      // Only run this in development or if admin doesn't exist
+      const response = await fetch('/api/admin/setup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      })
+      
+      if (response.ok) {
+        console.log('Admin setup completed')
+      }
+    } catch (error) {
+      console.warn('Admin setup failed:', error)
+    }
+  },
+
   async signup(email: string, password: string, username?: string, referralCode?: string): Promise<{ success: boolean; user?: User; error?: string }> {
     try {
       const response = await fetch('/api/auth/signup', {
@@ -23,6 +39,11 @@ export const authService = {
 
   async login(email: string, password: string): Promise<{ success: boolean; user?: User; error?: string }> {
     try {
+      // If this is an admin login attempt, ensure admin is set up
+      if (email === 'admin@chronostime.com') {
+        await this.ensureAdminSetup()
+      }
+
       const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
