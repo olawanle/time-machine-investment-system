@@ -4,35 +4,37 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  /* Light Theme - Premium Investment Platform */
-  --background: #ffffff;
-  --foreground: #020817;
-  --card: #ffffff;
-  --card-foreground: #020817;
+  /* DARK THEME AS DEFAULT - Premium Investment Platform */
+  --background: #020817;
+  --foreground: #f8fafc;
+  --card: #0b1220;
+  --card-foreground: #f8fafc;
+  --popover: #0b1220;
+  --popover-foreground: #f8fafc;
   --primary: #3CE7FF;
   --primary-foreground: #020817;
   --secondary: #6C63FF;
   --secondary-foreground: #ffffff;
+  --muted: #1e293b;
+  --muted-foreground: #cbd5e1;
   --accent: #EFBF60;
   --accent-foreground: #020817;
   --destructive: #ef4444;
   --destructive-foreground: #ffffff;
-  --border: #e2e8f0;
-  --input: #f8fafc;
+  --border: rgba(60, 231, 255, 0.2);
+  --input: #0b1220;
   --ring: #3CE7FF;
   --success: #22c55e;
   --warning: #EFBF60;
   --info: #3CE7FF;
   --radius: 16px;
-  --muted: #f8fafc;
-  --muted-foreground: #64748b;
-  --sidebar: #f8fafc;
-  --sidebar-foreground: #020817;
+  --sidebar: #0b1220;
+  --sidebar-foreground: #f8fafc;
   --sidebar-primary: #3CE7FF;
   --sidebar-primary-foreground: #020817;
-  --sidebar-accent: #f1f5f9;
-  --sidebar-accent-foreground: #020817;
-  --sidebar-border: #e2e8f0;
+  --sidebar-accent: #1e293b;
+  --sidebar-accent-foreground: #f8fafc;
+  --sidebar-border: rgba(60, 231, 255, 0.2);
   --sidebar-ring: #3CE7FF;
   --chart-1: #3CE7FF;
   --chart-2: #6C63FF;
