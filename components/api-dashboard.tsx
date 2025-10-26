@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { IOSLayout } from "./ios-layout"
 import { resetAllUserBalances } from "@/lib/reset-balances"
 import { ReferralSystem } from "@/components/referral-system"
@@ -1404,9 +1405,27 @@ export function APIDashboard({ user, onLogout }: APIDashboardProps) {
             onNavigate={setCurrentSection}
           />
         )}
-      {currentSection === "portfolio" && renderPortfolio()}
-      {currentSection === "investment" && renderInvestment()}
-      {currentSection === "invest" && renderInvestment()}
+      {currentSection === "wallet" && (
+        <div className="p-6 space-y-6">
+          <div>
+            <h1 className="text-3xl font-bold mb-2">Wallet</h1>
+            <p className="text-muted-foreground">Manage your funds, deposits, and withdrawals</p>
+          </div>
+          
+          <Tabs defaultValue="topup" className="w-full">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="topup">Top Up Balance</TabsTrigger>
+              <TabsTrigger value="withdraw">Withdraw Funds</TabsTrigger>
+            </TabsList>
+            <TabsContent value="topup" className="mt-6">
+              <BalanceTopup user={userData} onUserUpdate={setUserData} />
+            </TabsContent>
+            <TabsContent value="withdraw" className="mt-6">
+              {renderWithdraw()}
+            </TabsContent>
+          </Tabs>
+        </div>
+      )}
         {currentSection === "marketplace" && (
           <div className="p-6">
             <TimeMachineMarketplace 
