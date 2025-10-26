@@ -12,7 +12,7 @@ interface ThemeContextType {
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined)
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setTheme] = useState<Theme>("light")
+  const [theme, setTheme] = useState<Theme>("dark")
   const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
@@ -20,13 +20,20 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     const savedTheme = localStorage.getItem("chronostime-theme") as Theme
     if (savedTheme) {
       setTheme(savedTheme)
+    } else {
+      setTheme("dark") // Default to dark theme
     }
   }, [])
 
   useEffect(() => {
     if (mounted) {
       localStorage.setItem("chronostime-theme", theme)
-      document.documentElement.setAttribute("data-theme", theme)
+      // Use className instead of data-theme to match CSS selector
+      if (theme === "dark") {
+        document.documentElement.classList.add("dark")
+      } else {
+        document.documentElement.classList.remove("dark")
+      }
     }
   }, [theme, mounted])
 

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { createClient as createAdminClient } from '@supabase/supabase-js'
 
 export async function POST(request: NextRequest) {
   try {
@@ -34,8 +35,22 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Get user profile (or create if missing)
-    let { data: profile, error: profileError } = await supabase
+    // Use admin client to fetch profile (bypasses RLS issues)
+    if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+      console.error('SUPABASE_SERVICE_ROLE_KEY is not configured')
+      return NextResponse.json(
+        { error: 'Server configuration error' },
+        { status: 500 }
+      )
+    }
+
+    const adminClient = createAdminClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!
+    )
+
+    // Get user profile
+    let { data: profile, error: profileError } = await adminClient
       .from('users')
       .select(`
         *,

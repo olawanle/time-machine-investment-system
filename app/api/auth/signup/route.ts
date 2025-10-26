@@ -112,10 +112,10 @@ export async function POST(request: NextRequest) {
           created_at: new Date().toISOString(),
         })
 
-        // Give referral bonus to referrer
+        // Give referral bonus to referrer ($5)
         await supabase
           .from('users')
-          .update({ balance: referrer.balance + 10 })
+          .update({ balance: referrer.balance + 5 })
           .eq('id', referrer.id)
       }
     }
