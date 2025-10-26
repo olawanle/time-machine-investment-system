@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Use RPC function to fetch profile (bypasses schema cache issues)
+    // Fetch user profile using admin client to bypass RLS
     if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
       console.error('SUPABASE_SERVICE_ROLE_KEY is not configured')
       return NextResponse.json(
@@ -49,10 +49,12 @@ export async function POST(request: NextRequest) {
       process.env.SUPABASE_SERVICE_ROLE_KEY!
     )
 
-    // Get user profile using RPC function
-    const { data: profileData, error: profileError } = await adminClient.rpc('get_user_profile', {
-      p_user_id: authData.user.id
-    })
+    // Get user profile with direct SELECT
+    const { data: profileData, error: profileError } = await adminClient
+      .from('users')
+      .select('*')
+      .eq('id', authData.user.id)
+      .single()
 
     // If profile doesn't exist, it means the user was created but profile creation failed
     if (profileError || !profileData) {
@@ -68,7 +70,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const profile = profileData as any
+    const profile = profileData
 
     return NextResponse.json({
       success: true,

@@ -57,17 +57,33 @@ export async function POST(request: NextRequest) {
 
     // Generate referral code
     const userReferralCode = Math.random().toString(36).substring(2, 8).toUpperCase()
+    const userUsername = username || email.split('@')[0]
 
-    // Create user profile using RPC function to bypass schema cache issues
+    // Create user profile using direct INSERT to bypass schema cache issues
     console.log('Creating user profile for:', authData.user.id)
-    const { data: insertData, error: profileError } = await supabase.rpc('create_user_profile', {
-      p_id: authData.user.id,
-      p_email: email,
-      p_name: username || email.split('@')[0],
-      p_username: username || email.split('@')[0],
-      p_referral_code: userReferralCode,
-      p_referred_by: referralCode || null,
-    })
+    const { data: insertData, error: profileError } = await supabase
+      .from('users')
+      .insert({
+        id: authData.user.id,
+        email: email,
+        name: userUsername,
+        username: userUsername,
+        balance: 0,
+        claimed_balance: 0,
+        total_invested: 0,
+        total_earned: 0,
+        roi: 0,
+        tier: 'bronze',
+        is_admin: false,
+        referral_code: userReferralCode,
+        referred_by: referralCode || null,
+        last_withdrawal_date: 0,
+        is_suspended: false,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      })
+      .select()
+      .single()
     
     console.log('Profile insert result:', { insertData, profileError })
 
