@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { AuthForm } from "@/components/auth-form"
 import { Dashboard } from "@/components/dashboard"
 import { AnalyticsPage } from "@/components/analytics-page"
-import { AdminPanel } from "@/components/admin-panel"
+import { AdminPanelV2 } from "@/components/admin-panel-v2"
 import { LandingPage } from "@/components/landing-page"
 import { ThemeProvider } from "@/components/theme-provider"
 import { APIDashboard } from "@/components/api-dashboard"
@@ -157,7 +157,7 @@ export default function Home() {
         )}
 
       {view === "admin" && user?.email === "admin@chronostime.com" && (
-        <AdminPanel onLogout={handleLogout} onBackToDashboard={() => setView("dashboard")} />
+        <AdminPanelV2 onLogout={handleLogout} onBackToDashboard={() => setView("dashboard")} />
       )}
 
       {view === "analytics" && user && (

@@ -15,7 +15,7 @@ import { NotificationSystem } from "@/components/notification-system"
 import { AchievementSystem } from "@/components/achievement-system"
 import { AdvancedDashboard } from "@/components/advanced-dashboard"
 import { AdminDashboard } from "@/components/admin-dashboard"
-import { AdminCommandCenter } from "@/components/admin-command-center"
+import { AdminPanelV2 } from "@/components/admin-panel-v2"
 import { RealUserDashboard } from "@/components/real-user-dashboard"
 import { ModernSidebar } from "@/components/modern-sidebar"
 import { ModernUserDashboard } from "@/components/modern-user-dashboard"
@@ -1502,11 +1502,8 @@ export function APIDashboard({ user, onLogout }: APIDashboardProps) {
       {currentSection === "achievements" && renderAchievements()}
       {currentSection === "advanced" && renderAdvancedDashboard()}
       {currentSection === "settings" && renderSettings()}
-        {currentSection === "admin" && (
-          <AdminCommandCenter 
-            user={userData}
-            onLogout={onLogout}
-          />
+        {currentSection === "admin" && userData?.email === "admin@chronostime.com" && (
+          <AdminPanelV2 />
         )}
       
         {!["overview", "portfolio", "investment", "invest", "withdraw", "history", "machines", "claim", "referrals", "analytics", "notifications", "achievements", "advanced", "settings", "marketplace", "admin"].includes(currentSection) && (
