@@ -4,7 +4,7 @@ import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { AsyncWrapper } from "@/components/ui/async-wrapper"
-import { realDataService, type PlatformStats, type MarketData } from "@/lib/real-data-service"
+import { realDataService, type PlatformStats } from "@/lib/real-data-service"
 import { storage, type User } from "@/lib/storage"
 import { 
   BarChart3, 
@@ -27,7 +27,6 @@ export function RealAnalytics({ user }: RealAnalyticsProps) {
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [platformStats, setPlatformStats] = useState<PlatformStats | null>(null)
-  const [marketData, setMarketData] = useState<MarketData | null>(null)
   const [userAnalytics, setUserAnalytics] = useState<any>(null)
 
   useEffect(() => {
@@ -39,13 +38,9 @@ export function RealAnalytics({ user }: RealAnalyticsProps) {
       setIsLoading(true)
       setError(null)
 
-      const [stats, market] = await Promise.all([
-        realDataService.getPlatformStats(),
-        realDataService.getMarketData()
-      ])
+      const stats = await realDataService.getPlatformStats()
 
       setPlatformStats(stats)
-      setMarketData(market)
       setUserAnalytics(calculateUserAnalytics(user))
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to load analytics'
