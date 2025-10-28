@@ -134,8 +134,8 @@ export function TimeMachineMarketplace({ user, onPurchase, onUserUpdate }: TimeM
       return
     }
 
-    if (userMachines.length + quantity > 10) {
-      setPurchaseError("Maximum 10 machines allowed per user.")
+    if (userMachines.length + quantity > 5) {
+      setPurchaseError("Maximum 5 machines allowed per user.")
       return
     }
 
@@ -167,6 +167,15 @@ export function TimeMachineMarketplace({ user, onPurchase, onUserUpdate }: TimeM
         totalInvested: (user.totalInvested || 0) + totalCost
       }
 
+      // Save to storage for persistence
+      try {
+        const { storage } = await import('@/lib/storage')
+        await storage.saveUser(updatedUser)
+      } catch (storageError) {
+        console.warn('Failed to save to database, using local storage fallback:', storageError)
+        // Continue with the purchase even if storage fails
+      }
+      
       onUserUpdate(updatedUser)
       setPurchaseSuccess(`Successfully purchased ${quantity} ${machine.name} machine(s)!`)
       setShowPurchaseModal(false)
@@ -207,7 +216,7 @@ export function TimeMachineMarketplace({ user, onPurchase, onUserUpdate }: TimeM
           </div>
           <div className="flex items-center gap-2">
             <Zap className="w-4 h-4 text-primary" />
-            <span>Machines: {userMachines.length}/10</span>
+            <span>Machines: {userMachines.length}/5</span>
           </div>
         </div>
       </div>

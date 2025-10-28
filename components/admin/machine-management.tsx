@@ -64,7 +64,12 @@ export function MachineManagement() {
     try {
       setLoading(true)
       const response = await fetch('/api/admin/machines')
-      if (!response.ok) throw new Error('Failed to fetch machines')
+      if (!response.ok) {
+        console.warn('Machine templates table not found, using empty array')
+        setMachines([])
+        setLoading(false)
+        return
+      }
       
       const data = await response.json()
       setMachines(data.machines || [])

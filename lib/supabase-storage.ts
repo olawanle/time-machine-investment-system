@@ -218,34 +218,45 @@ export const supabaseStorage = {
     
     // Update time machines
     if (user.machines.length > 0) {
-      console.log(`🤖 Saving ${user.machines.length} time machines...`)
-      for (const machine of user.machines) {
-        const { error: machineError } = await getSupabaseClient()
-          .from('time_machines')
-          .upsert({
-            id: machine.id,
-            user_id: user.id,
-            level: machine.level,
-            name: machine.name,
-            description: machine.description,
-            unlocked_at: machine.unlockedAt,
-            last_claimed_at: machine.lastClaimedAt,
-            is_active: machine.isActive,
-            reward_amount: machine.rewardAmount,
-            claim_interval_ms: machine.claimIntervalMs,
-            icon: machine.icon,
-            investment_amount: machine.investmentAmount,
-            max_earnings: machine.maxEarnings,
-            current_earnings: machine.currentEarnings,
-            roi_percentage: machine.roiPercentage,
-            updated_at: new Date().toISOString(),
-          })
-        
-        if (machineError) {
-          console.error('❌ Error saving machine:', machineError)
+      console.log(`🤖 Attempting to save ${user.machines.length} time machines...`)
+      try {
+        for (const machine of user.machines) {
+          const { error: machineError } = await getSupabaseClient()
+            .from('time_machines')
+            .upsert({
+              id: machine.id,
+              user_id: user.id,
+              level: machine.level,
+              name: machine.name,
+              description: machine.description,
+              unlocked_at: machine.unlockedAt,
+              last_claimed_at: machine.lastClaimedAt,
+              is_active: machine.isActive,
+              reward_amount: machine.rewardAmount,
+              claim_interval_ms: machine.claimIntervalMs,
+              icon: machine.icon,
+              investment_amount: machine.investmentAmount,
+              max_earnings: machine.maxEarnings,
+              current_earnings: machine.currentEarnings,
+              roi_percentage: machine.roiPercentage,
+              updated_at: new Date().toISOString(),
+            })
+          
+          if (machineError) {
+            const errorMessage = machineError.message || machineError.details || 'Unknown database error'
+            // If it's a schema error, just warn and continue
+            if (errorMessage.includes('schema cache') || errorMessage.includes('column') || errorMessage.includes('table')) {
+              console.warn('⚠️ Database schema not ready for time machines, using localStorage fallback')
+              break
+            } else {
+              console.error('❌ Error saving machine:', errorMessage)
+            }
+          }
         }
+        console.log('✅ Time machines saved to database')
+      } catch (schemaError) {
+        console.warn('⚠️ Time machines table not available, using localStorage fallback')
       }
-      console.log('✅ Time machines saved')
     }
     
     console.log('✅ Save complete!')

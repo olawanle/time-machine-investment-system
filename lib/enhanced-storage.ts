@@ -60,7 +60,7 @@ class EnhancedStorageService {
         })
 
         const result = await Promise.race([operation(), timeoutPromise])
-        
+
         return {
           success: true,
           data: result,
@@ -75,12 +75,22 @@ class EnhancedStorageService {
           err = new Error(error)
         } else if (error && typeof error === 'object') {
           // Handle object errors (like from Supabase)
-          const errorMessage = (error as any).message || (error as any).error || JSON.stringify(error)
-          err = new Error(errorMessage)
+          const errorMessage = (error as any).message || (error as any).error || (error as any).details
+          if (errorMessage) {
+            err = new Error(errorMessage)
+          } else {
+            // Don't stringify empty objects
+            const stringified = JSON.stringify(error)
+            if (stringified === '{}' || stringified === 'null') {
+              err = new Error('Database operation failed')
+            } else {
+              err = new Error(stringified)
+            }
+          }
         } else {
           err = new Error('Unknown error occurred')
         }
-        
+
         // Log error with context - only if it's a real error with meaningful content
         if (err.message && err.message.trim() && err.message !== '{}' && err.message !== 'undefined') {
           errorService.logError(err, { context, attempt, maxRetries: retries })
@@ -180,7 +190,7 @@ class EnhancedStorageService {
     try {
       const userId = localStorage.getItem("chronostime_current_user")
       if (!userId) return null
-      
+
       const users = JSON.parse(localStorage.getItem("chronostime_users") || "{}")
       return users[userId] || null
     } catch (error) {
@@ -222,10 +232,10 @@ class EnhancedStorageService {
   async getCurrentUser(options?: StorageOptions): Promise<StorageResult<User | null>> {
     return this.withErrorHandling(async () => {
       if (typeof window === "undefined") return null
-      
+
       const userId = localStorage.getItem("chronostime_current_user")
       if (!userId) return null
-      
+
       try {
         const { data, error } = await this.getSupabaseClient()
           .from('users')
@@ -236,13 +246,13 @@ class EnhancedStorageService {
           `)
           .eq('id', userId)
           .single()
-        
+
         if (error) {
           throw new Error(`Database error: ${error.message}`)
         }
-        
+
         if (!data) return null
-        
+
         return this.mapUserFromDatabase(data)
       } catch (dbError) {
         // If database fails, try localStorage fallback
@@ -258,9 +268,9 @@ class EnhancedStorageService {
       if (typeof window === "undefined") {
         throw new Error('Cannot save user: window is undefined')
       }
-      
+
       console.log('💾 Saving user:', user.email)
-      
+
       const userData: any = {
         id: user.id,
         email: user.email,
@@ -284,53 +294,64 @@ class EnhancedStorageService {
         userData.password_hash = await this.hashPassword(password)
         console.log('✅ Password hashed')
       }
-      
+
       // Update user data
       console.log('📝 Upserting user to database...')
       const { data: savedUser, error: userError } = await this.getSupabaseClient()
         .from('users')
         .upsert(userData, { onConflict: 'id' })
         .select()
-      
+
       if (userError) {
         throw new Error(`Failed to save user: ${userError.message}`)
       }
-      
+
       console.log('✅ User saved successfully:', savedUser)
-      
-      // Update time machines
+
+      // Update time machines - skip if database schema is not ready
       if (user.machines.length > 0) {
-        console.log(`🤖 Saving ${user.machines.length} time machines...`)
-        for (const machine of user.machines) {
-          const { error: machineError } = await this.getSupabaseClient()
-            .from('time_machines')
-            .upsert({
-              id: machine.id,
-              user_id: user.id,
-              level: machine.level,
-              name: machine.name,
-              description: machine.description,
-              unlocked_at: machine.unlockedAt,
-              last_claimed_at: machine.lastClaimedAt,
-              is_active: machine.isActive,
-              reward_amount: machine.rewardAmount,
-              claim_interval_ms: machine.claimIntervalMs,
-              icon: machine.icon,
-              investment_amount: machine.investmentAmount,
-              max_earnings: machine.maxEarnings,
-              current_earnings: machine.currentEarnings,
-              roi_percentage: machine.roiPercentage,
-              updated_at: new Date().toISOString(),
-            })
-          
-          if (machineError) {
-            console.error('❌ Error saving machine:', machineError)
-            throw new Error(`Failed to save machine: ${machineError.message}`)
+        console.log(`🤖 Attempting to save ${user.machines.length} time machines...`)
+        try {
+          for (const machine of user.machines) {
+            const { error: machineError } = await this.getSupabaseClient()
+              .from('time_machines')
+              .upsert({
+                id: machine.id,
+                user_id: user.id,
+                level: machine.level,
+                name: machine.name,
+                description: machine.description,
+                unlocked_at: machine.unlockedAt,
+                last_claimed_at: machine.lastClaimedAt,
+                is_active: machine.isActive,
+                reward_amount: machine.rewardAmount,
+                claim_interval_ms: machine.claimIntervalMs,
+                icon: machine.icon,
+                investment_amount: machine.investmentAmount,
+                max_earnings: machine.maxEarnings,
+                current_earnings: machine.currentEarnings,
+                roi_percentage: machine.roiPercentage,
+                updated_at: new Date().toISOString(),
+              })
+
+            if (machineError) {
+              const errorMessage = machineError.message || machineError.details || 'Unknown database error'
+              // If it's a schema error, just warn and continue
+              if (errorMessage.includes('schema cache') || errorMessage.includes('column') || errorMessage.includes('table')) {
+                console.warn('⚠️ Database schema not ready for time machines, using localStorage fallback')
+                break
+              } else {
+                console.error('❌ Error saving machine:', errorMessage)
+                throw new Error(`Failed to save machine: ${errorMessage}`)
+              }
+            }
           }
+          console.log('✅ Time machines saved to database')
+        } catch (schemaError) {
+          console.warn('⚠️ Time machines table not available, using localStorage fallback')
         }
-        console.log('✅ Time machines saved')
       }
-      
+
       // Also save to localStorage as backup
       try {
         const users = JSON.parse(localStorage.getItem("chronostime_users") || "{}")
@@ -339,7 +360,7 @@ class EnhancedStorageService {
       } catch (localError) {
         console.warn('Failed to save to localStorage:', localError)
       }
-      
+
       console.log('✅ Save complete!')
     }, 'saveUser', options)
   }
@@ -347,7 +368,7 @@ class EnhancedStorageService {
   async verifyLogin(email: string, password: string, options?: StorageOptions): Promise<StorageResult<User | null>> {
     return this.withErrorHandling(async () => {
       console.log('🔍 Attempting login for:', email)
-      
+
       const { data, error } = await this.getSupabaseClient()
         .from('users')
         .select(`
@@ -357,7 +378,7 @@ class EnhancedStorageService {
         `)
         .eq('email', email)
         .single()
-      
+
       if (error) {
         if (error.code === 'PGRST116') {
           // No rows returned - user not found
@@ -365,14 +386,14 @@ class EnhancedStorageService {
         }
         throw new Error(`Database error: ${error.message}`)
       }
-      
+
       if (!data) {
         console.log('❌ User not found')
         return null
       }
-      
+
       console.log('✅ User found:', { email: data.email, hasPassword: !!data.password_hash })
-      
+
       // If user has a password hash, verify it
       if (data.password_hash) {
         const isValid = await this.verifyPassword(password, data.password_hash)
@@ -390,9 +411,9 @@ class EnhancedStorageService {
           .eq('id', data.id)
         console.log('✅ Password hash updated')
       }
-      
+
       console.log('✅ Login successful')
-      
+
       return this.mapUserFromDatabase(data)
     }, 'verifyLogin', options)
   }

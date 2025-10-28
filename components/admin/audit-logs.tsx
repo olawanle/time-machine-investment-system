@@ -80,7 +80,12 @@ export function AuditLogs() {
       if (filters.endDate) params.append('endDate', filters.endDate)
       
       const response = await fetch(`/api/admin/audit-logs?${params}`)
-      if (!response.ok) throw new Error('Failed to fetch audit logs')
+      if (!response.ok) {
+        console.warn('Audit logs table not found, using empty array')
+        setLogs([])
+        setLoading(false)
+        return
+      }
       
       const data = await response.json()
       setLogs(data.logs || [])

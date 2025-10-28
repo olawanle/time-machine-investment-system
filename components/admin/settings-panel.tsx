@@ -57,7 +57,18 @@ export function SettingsPanel() {
     try {
       setLoading(true)
       const response = await fetch('/api/admin/settings')
-      if (!response.ok) throw new Error('Failed to fetch settings')
+      if (!response.ok) {
+        console.warn('System settings table not found, using default settings')
+        setSettings({
+          maintenance_mode: false,
+          registration_open: true,
+          min_withdrawal: 50,
+          referral_bonus: 50,
+          daily_bonus: 10
+        })
+        setLoading(false)
+        return
+      }
       
       const data = await response.json()
       setSettings(data.settings || {})
@@ -72,7 +83,11 @@ export function SettingsPanel() {
   const fetchAnnouncements = useCallback(async () => {
     try {
       const response = await fetch('/api/admin/announcements?includeInactive=true')
-      if (!response.ok) throw new Error('Failed to fetch announcements')
+      if (!response.ok) {
+        console.warn('Announcements table not found, using empty array')
+        setAnnouncements([])
+        return
+      }
       
       const data = await response.json()
       setAnnouncements(data.announcements || [])

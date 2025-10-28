@@ -84,6 +84,10 @@ export function MachineClaiming({ user, onUserUpdate }: MachineClaimingProps) {
         claimedBalance: (user.claimedBalance || 0) + rewardAmount
       }
 
+      // Save to storage for persistence
+      const { storage } = await import('@/lib/storage')
+      await storage.saveUser(updatedUser)
+
       onUserUpdate(updatedUser)
       setClaimSuccess(`Successfully claimed $${rewardAmount} from ${machine.name}!`)
       

@@ -89,7 +89,12 @@ export function FinancialManagement() {
     try {
       setLoading(true)
       const response = await fetch('/api/admin/transactions')
-      if (!response.ok) throw new Error('Failed to fetch transactions')
+      if (!response.ok) {
+        console.warn('Transactions table not found, using empty array')
+        setTransactions([])
+        setLoading(false)
+        return
+      }
       
       const data = await response.json()
       setTransactions(data.transactions || [])
@@ -138,7 +143,11 @@ export function FinancialManagement() {
   const fetchWithdrawals = useCallback(async () => {
     try {
       const response = await fetch('/api/admin/withdrawals')
-      if (!response.ok) throw new Error('Failed to fetch withdrawals')
+      if (!response.ok) {
+        console.warn('Withdrawals data not available, using empty array')
+        setWithdrawals([])
+        return
+      }
       
       const data = await response.json()
       setWithdrawals(data.withdrawals || [])

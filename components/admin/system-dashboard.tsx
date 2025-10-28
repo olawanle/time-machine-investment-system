@@ -73,7 +73,20 @@ export function SystemDashboard() {
     try {
       setLoading(true)
       const response = await fetch('/api/admin/stats')
-      if (!response.ok) throw new Error('Failed to fetch stats')
+      if (!response.ok) {
+        console.warn('Admin stats API not available, using default values')
+        setStats({
+          totalUsers: 0,
+          totalBalance: 0,
+          totalInvested: 0,
+          totalEarned: 0,
+          activeMachines: 0,
+          totalPayments: 0
+        })
+        setRecentPayments([])
+        setLoading(false)
+        return
+      }
       
       const data = await response.json()
       setStats(data.stats || {

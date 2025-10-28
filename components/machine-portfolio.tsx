@@ -49,7 +49,7 @@ export function MachinePortfolio({ user, onUserUpdate }: MachinePortfolioProps) 
     loadMachines()
   }, [user])
 
-  const handleClaimEarnings = (machineId: number) => {
+  const handleClaimEarnings = async (machineId: number) => {
     // Simulate claiming earnings
     const updatedMachines = ownedMachines.map(machine => {
       if (machine.id === machineId) {
@@ -70,6 +70,10 @@ export function MachinePortfolio({ user, onUserUpdate }: MachinePortfolioProps) 
       balance: (user.balance || 0) + ownedMachines.find(m => m.id === machineId)?.weeklyReturn || 0,
       ownedMachines: updatedMachines
     }
+    
+    // Save to storage for persistence
+    const { storage } = await import('@/lib/storage')
+    await storage.saveUser(updatedUser)
     
     onUserUpdate(updatedUser)
   }

@@ -77,7 +77,7 @@ export function ModernUserDashboard({ user, onNavigate }: ModernUserDashboardPro
               </Badge>
             </div>
             <p className="text-sm text-slate-400 mb-1">Available Balance</p>
-            <p className="text-3xl font-bold text-white">${user.claimedBalance.toFixed(2)}</p>
+            <p className="text-3xl font-bold text-white">${user.balance.toFixed(2)}</p>
             <p className="text-xs text-green-400 mt-2 flex items-center gap-1">
               <ArrowUpRight className="w-3 h-3" />
               Ready to withdraw
