@@ -117,8 +117,14 @@ export const storage = {
   async getCurrentUser() {
     try {
       const result = await enhancedStorage.getCurrentUser()
-      if (result.success) {
-        return result.data || null
+      if (result.success && result.data) {
+        // Validate data integrity and sync if needed
+        const isValid = await this.validateDataIntegrity(result.data)
+        if (!isValid) {
+          console.warn('Data integrity issues detected, attempting sync...')
+          return this.syncUserData(result.data.id)
+        }
+        return result.data
       }
       // Fallback to original implementation
       console.warn('Enhanced storage failed, falling back:', result.error)
@@ -166,6 +172,21 @@ export const storage = {
   updateWithdrawalRequest: supabaseStorage.updateWithdrawalRequest,
   saveSuggestion: supabaseStorage.saveSuggestion,
   getSuggestions: supabaseStorage.getSuggestions,
+
+  // Data synchronization methods
+  async syncUserData(userId: string) {
+    const result = await enhancedStorage.syncUserData(userId)
+    if (result.success) {
+      return result.data || null
+    }
+    console.warn('Sync failed, falling back to getCurrentUser')
+    return this.getCurrentUser()
+  },
+
+  async validateDataIntegrity(user: User) {
+    const result = await enhancedStorage.validateDataIntegrity(user)
+    return result.success ? result.data || false : false
+  },
 }
 
 // Keep localStorage version as backup

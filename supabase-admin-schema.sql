@@ -165,7 +165,7 @@ INSERT INTO public.system_settings (key, value, description) VALUES
   ('maintenance_mode', 'false', 'Enable/disable maintenance mode'),
   ('registration_open', 'true', 'Allow new user registrations'),
   ('min_withdrawal', '50', 'Minimum withdrawal amount in USD'),
-  ('referral_bonus', '50', 'Referral bonus amount in USD'),
+  ('referral_bonus', '5', 'Referral bonus amount in USD'),
   ('daily_bonus', '10', 'Daily login bonus amount in USD'),
   ('max_withdrawal_per_day', '1000', 'Maximum withdrawal per day in USD'),
   ('withdrawal_fee_percentage', '2', 'Withdrawal fee percentage')
@@ -176,7 +176,7 @@ INSERT INTO auth.users (id, email, encrypted_password, email_confirmed_at, creat
 VALUES (
   'a0eebc99-9c0b-4ef8-bb6d-6bb9bd380a11',
   'admin@chronostime.com',
-  crypt('AdminPassword123!', gen_salt('bf')),
+  crypt('ChangeMe123!', gen_salt('bf')), -- CHANGE THIS PASSWORD IMMEDIATELY
   now(),
   now(),
   now()

@@ -6,38 +6,27 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { DollarSign, Clock, TrendingUp, Zap, Star, Plus } from "lucide-react"
-import type { User } from "@/lib/storage"
+import type { User, TimeMachine } from "@/lib/storage"
+import { storage } from "@/lib/storage"
 
 interface MachinePortfolioProps {
   user: User
   onUserUpdate: (user: User) => void
 }
 
-interface OwnedMachine {
-  id: number
-  name: string
-  cost: number
-  weeklyReturn: number
-  purchaseDate: string
-  nextPayout: string
-  totalEarned: number
-  image: string
-  darkImage: string
-}
-
 export function MachinePortfolio({ user, onUserUpdate }: MachinePortfolioProps) {
-  const [ownedMachines, setOwnedMachines] = useState<OwnedMachine[]>([])
+  const [ownedMachines, setOwnedMachines] = useState<TimeMachine[]>([])
   const [totalWeeklyEarnings, setTotalWeeklyEarnings] = useState(0)
   const [nextPayout, setNextPayout] = useState("")
 
   useEffect(() => {
     // Load user's owned machines from storage
     const loadMachines = () => {
-      const machines = user.ownedMachines || []
+      const machines = user.machines || []
       setOwnedMachines(machines)
       
       // Calculate total weekly earnings
-      const total = machines.reduce((sum, machine) => sum + machine.weeklyReturn, 0)
+      const total = machines.reduce((sum: number, machine: TimeMachine) => sum + (machine.rewardAmount || 0), 0)
       setTotalWeeklyEarnings(total)
       
       // Calculate next payout (simplified - in real app would use actual dates)
@@ -49,14 +38,14 @@ export function MachinePortfolio({ user, onUserUpdate }: MachinePortfolioProps) 
     loadMachines()
   }, [user])
 
-  const handleClaimEarnings = async (machineId: number) => {
+  const handleClaimEarnings = async (machineId: string) => {
     // Simulate claiming earnings
     const updatedMachines = ownedMachines.map(machine => {
       if (machine.id === machineId) {
         return {
           ...machine,
-          totalEarned: machine.totalEarned + machine.weeklyReturn,
-          nextPayout: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toLocaleDateString()
+          currentEarnings: machine.currentEarnings + machine.rewardAmount,
+          lastClaimedAt: Date.now()
         }
       }
       return machine
@@ -65,20 +54,21 @@ export function MachinePortfolio({ user, onUserUpdate }: MachinePortfolioProps) 
     setOwnedMachines(updatedMachines)
     
     // Update user balance
+    const machine = ownedMachines.find(m => m.id === machineId)
+    const rewardAmount = machine?.rewardAmount || 0
     const updatedUser = {
       ...user,
-      balance: (user.balance || 0) + ownedMachines.find(m => m.id === machineId)?.weeklyReturn || 0,
-      ownedMachines: updatedMachines
+      balance: (user.balance || 0) + rewardAmount,
+      machines: updatedMachines
     }
     
     // Save to storage for persistence
-    const { storage } = await import('@/lib/storage')
     await storage.saveUser(updatedUser)
     
     onUserUpdate(updatedUser)
   }
 
-  const getRarityColor = (machineId: number) => {
+  const getRarityColor = (level: number) => {
     const rarities = {
       1: "bg-gray-500",
       2: "bg-green-500", 
@@ -86,10 +76,10 @@ export function MachinePortfolio({ user, onUserUpdate }: MachinePortfolioProps) 
       4: "bg-yellow-500",
       5: "bg-purple-500"
     }
-    return rarities[machineId as keyof typeof rarities] || "bg-gray-500"
+    return rarities[level as keyof typeof rarities] || "bg-gray-500"
   }
 
-  const getRarityName = (machineId: number) => {
+  const getRarityName = (level: number) => {
     const names = {
       1: "BASIC",
       2: "IMPROVED",
@@ -97,7 +87,7 @@ export function MachinePortfolio({ user, onUserUpdate }: MachinePortfolioProps) 
       4: "ELITE",
       5: "LEGENDARY"
     }
-    return names[machineId as keyof typeof names] || "BASIC"
+    return names[level as keyof typeof names] || "BASIC"
   }
 
   if (ownedMachines.length === 0) {
@@ -169,15 +159,15 @@ export function MachinePortfolio({ user, onUserUpdate }: MachinePortfolioProps) 
                   <Star className="w-4 h-4 text-yellow-400" />
                   {machine.name}
                 </CardTitle>
-                <Badge className={`${getRarityColor(machine.id)} text-white`}>
-                  {getRarityName(machine.id)}
+                <Badge className={`${getRarityColor(machine.level)} text-white`}>
+                  {getRarityName(machine.level)}
                 </Badge>
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="aspect-square bg-gradient-to-br from-cyan-500/10 to-blue-500/10 rounded-lg flex items-center justify-center p-4">
                 <img
-                  src={machine.image}
+                  src={machine.icon}
                   alt={machine.name}
                   className="w-full h-full object-contain"
                 />
@@ -185,18 +175,18 @@ export function MachinePortfolio({ user, onUserUpdate }: MachinePortfolioProps) 
               
               <div className="space-y-3">
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Weekly Return:</span>
-                  <span className="font-semibold text-green-400">${machine.weeklyReturn}</span>
+                  <span className="text-muted-foreground">Reward Amount:</span>
+                  <span className="font-semibold text-green-400">${machine.rewardAmount}</span>
                 </div>
                 
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Total Earned:</span>
-                  <span className="font-semibold text-cyan-400">${machine.totalEarned}</span>
+                  <span className="text-muted-foreground">Current Earnings:</span>
+                  <span className="font-semibold text-cyan-400">${machine.currentEarnings}</span>
                 </div>
                 
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Next Payout:</span>
-                  <span className="font-semibold text-blue-400">{machine.nextPayout}</span>
+                  <span className="text-muted-foreground">ROI:</span>
+                  <span className="font-semibold text-blue-400">{machine.roiPercentage}%</span>
                 </div>
               </div>
 
@@ -214,7 +204,7 @@ export function MachinePortfolio({ user, onUserUpdate }: MachinePortfolioProps) 
                 disabled={false} // In real app, would check if payout is ready
               >
                 <DollarSign className="w-4 h-4 mr-2" />
-                Claim ${machine.weeklyReturn}
+                Claim ${machine.rewardAmount}
               </Button>
             </CardContent>
           </Card>

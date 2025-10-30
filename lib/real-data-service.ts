@@ -131,7 +131,7 @@ class RealDataService {
     const referralStats = {
       totalReferrals: user.referrals.length,
       activeReferrals: Math.floor(user.referrals.length * 0.7), // 70% active
-      referralEarnings: user.referrals.length * 25, // $25 per referral
+      referralEarnings: user.referrals.length * 5, // $5 per referral
       monthlyReferrals: Math.floor(user.referrals.length * 0.3) // 30% this month
     }
 

@@ -38,7 +38,7 @@ class AdminService {
     minInvestment: 100,
     maxInvestment: 10000,
     defaultROI: 15,
-    referralBonus: 25,
+    referralBonus: 5,
     withdrawalCooldown: 12
   }
 

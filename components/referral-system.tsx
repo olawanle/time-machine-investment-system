@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input"
 import { Copy, Users, TrendingUp, Clock, Share2 } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import type { User } from "@/lib/storage"
+import { storage } from "@/lib/storage"
 
 interface ReferralSystemProps {
   user: User
@@ -39,7 +40,6 @@ export function ReferralSystem({ user, onUserUpdate }: ReferralSystemProps) {
     }
 
     // Save to storage for persistence
-    const { storage } = await import('@/lib/storage')
     await storage.saveUser(updatedUser)
 
     onUserUpdate(updatedUser)

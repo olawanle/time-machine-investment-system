@@ -321,7 +321,7 @@ export function Dashboard({ user: initialUser, onLogout, currentView, onNavigate
 
           <AnimatedStatCard
             title="Network Rewards"
-            value={<AnimatedCounter value={user.referrals.length * 50} prefix="$" decimals={2} />}
+            value={<AnimatedCounter value={user.referrals.length * 5} prefix="$" decimals={2} />}
             description={`${user.referrals.length} professionals referred`}
             icon={<Users className="w-5 h-5" />}
             gradient="from-cyan-400 to-emerald-400"

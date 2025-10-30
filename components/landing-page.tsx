@@ -131,7 +131,7 @@ export function LandingPage({ onGetStarted }: LandingPageProps) {
                 </h1>
                 
                 <p className="text-xl md:text-2xl text-white/90 mb-10 animate-slide-in max-w-3xl mx-auto">
-                  Earn passive income through automated time-based investments. Start with as little as $10 and watch your wealth grow week after week.
+                  Earn passive income through automated time-based investments. Start with as little as $100 and watch your wealth grow week after week.
                 </p>
 
                 {/* Trust Bar - Premium Glassmorphic Design */}
@@ -272,7 +272,7 @@ export function LandingPage({ onGetStarted }: LandingPageProps) {
                   {
                     icon: Users,
                     title: "Referral Bonuses",
-                    description: "Earn extra income by referring friends. Get 10% commission on their investments.",
+                    description: "Earn $5 for each friend you refer. They get bonus benefits too when they join.",
                     color: "#EFBF60"
                   }
                 ].map((feature, idx) => (
@@ -478,7 +478,7 @@ export function LandingPage({ onGetStarted }: LandingPageProps) {
                       </Button>
                     </GlowHover>
                     
-                    <p className="text-sm text-white/50 mt-6">No credit card required • Start with $10</p>
+                    <p className="text-sm text-white/50 mt-6">No credit card required • Start with $100</p>
                   </div>
                 </div>
               </GlowHover>

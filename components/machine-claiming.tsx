@@ -16,6 +16,7 @@ import {
 } from "lucide-react"
 import Image from "next/image"
 import { useTheme } from "next-themes"
+import { storage } from "@/lib/storage"
 
 interface MachineClaimingProps {
   user: any
@@ -84,9 +85,9 @@ export function MachineClaiming({ user, onUserUpdate }: MachineClaimingProps) {
         claimedBalance: (user.claimedBalance || 0) + rewardAmount
       }
 
-      // Save to storage for persistence
-      const { storage } = await import('@/lib/storage')
+      // Save using the proper storage service for persistence across sessions
       await storage.saveUser(updatedUser)
+      console.log('✅ Machine claim saved via storage service')
 
       onUserUpdate(updatedUser)
       setClaimSuccess(`Successfully claimed $${rewardAmount} from ${machine.name}!`)

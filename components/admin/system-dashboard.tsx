@@ -117,7 +117,7 @@ export function SystemDashboard() {
         { name: 'Investments', value: data.stats?.totalInvested || 0, color: '#8b5cf6' },
         { name: 'Withdrawals', value: Math.abs(data.stats?.totalEarned || 0) * 0.8, color: '#ef4444' },
         { name: 'Fees', value: (data.stats?.totalInvested || 0) * 0.02, color: '#3b82f6' },
-        { name: 'Referrals', value: (data.stats?.totalUsers || 0) * 50, color: '#22c55e' }
+        { name: 'Referrals', value: (data.stats?.totalUsers || 0) * 5, color: '#22c55e' }
       ])
     } catch (error) {
       console.error('Error fetching stats:', error)

@@ -3,8 +3,9 @@
  */
 
 import { createClient } from './supabase/client'
-import { errorService, handleAsyncError } from './error-service'
-import type { User, TimeMachine, WithdrawalRequest, Suggestion } from './storage'
+import { errorService } from './error-service'
+import type { User, TimeMachine } from './storage'
+import { validators, validateAndSanitize } from './data-validation'
 
 // Storage operation result types
 export interface StorageResult<T> {
@@ -31,10 +32,44 @@ class EnhancedStorageService {
       window.addEventListener('online', () => {
         this.isOnline = true
         this.processQueue()
+        this.startPeriodicSync()
       })
       window.addEventListener('offline', () => {
         this.isOnline = false
+        this.stopPeriodicSync()
       })
+
+      // Start periodic sync when online
+      if (navigator.onLine) {
+        this.startPeriodicSync()
+      }
+    }
+  }
+
+  private syncInterval: NodeJS.Timeout | null = null
+
+  private startPeriodicSync() {
+    if (this.syncInterval) return // Already running
+
+    // Sync every 30 seconds when online
+    this.syncInterval = setInterval(async () => {
+      if (typeof window !== 'undefined' && this.isOnline) {
+        const userId = localStorage.getItem("chronostime_current_user")
+        if (userId) {
+          try {
+            await this.syncUserData(userId)
+          } catch (error) {
+            console.warn('Periodic sync failed:', error)
+          }
+        }
+      }
+    }, 30000)
+  }
+
+  private stopPeriodicSync() {
+    if (this.syncInterval) {
+      clearInterval(this.syncInterval)
+      this.syncInterval = null
     }
   }
 
@@ -237,6 +272,7 @@ class EnhancedStorageService {
       if (!userId) return null
 
       try {
+        // Try to load user with machines and referrals from database
         const { data, error } = await this.getSupabaseClient()
           .from('users')
           .select(`
@@ -253,7 +289,7 @@ class EnhancedStorageService {
 
         if (!data) return null
 
-        return this.mapUserFromDatabase(data)
+        return await this.mapUserFromDatabase(data)
       } catch (dbError) {
         // If database fails, try localStorage fallback
         console.warn('Database unavailable, using localStorage fallback')
@@ -269,22 +305,35 @@ class EnhancedStorageService {
         throw new Error('Cannot save user: window is undefined')
       }
 
-      console.log('💾 Saving user:', user.email)
+      // Validate and sanitize user data
+      const { data: sanitizedUser, validation } = validateAndSanitize(user, validators.user)
+
+      if (!validation.isValid) {
+        console.error('❌ User validation failed:', validation.errors)
+        throw new Error(`User validation failed: ${validation.errors.join(', ')}`)
+      }
+
+      if (validation.warnings.length > 0) {
+        console.warn('⚠️ User validation warnings:', validation.warnings)
+      }
+
+      console.log('💾 Saving user:', sanitizedUser.email)
+      console.log(`✅ User data validated with ${sanitizedUser.machines.length} machines`)
 
       const userData: any = {
-        id: user.id,
-        email: user.email,
-        username: user.username,
-        name: user.username,
-        balance: user.balance,
-        claimed_balance: user.claimedBalance,
-        referral_code: user.referralCode,
-        referred_by: user.referredBy || null,
-        last_withdrawal_date: user.lastWithdrawalDate,
-        tier: user.tier,
-        total_invested: user.totalInvested,
-        total_earned: user.totalEarned,
-        roi: user.roi,
+        id: sanitizedUser.id,
+        email: sanitizedUser.email,
+        username: sanitizedUser.username,
+        name: sanitizedUser.username,
+        balance: sanitizedUser.balance,
+        claimed_balance: sanitizedUser.claimedBalance,
+        referral_code: sanitizedUser.referralCode,
+        referred_by: sanitizedUser.referredBy || null,
+        last_withdrawal_date: sanitizedUser.lastWithdrawalDate,
+        tier: sanitizedUser.tier,
+        total_invested: sanitizedUser.totalInvested,
+        total_earned: sanitizedUser.totalEarned,
+        roi: sanitizedUser.roi,
         updated_at: new Date().toISOString(),
       }
 
@@ -352,13 +401,18 @@ class EnhancedStorageService {
         }
       }
 
-      // Also save to localStorage as backup
+      console.log(`✅ User data saved with ${user.machines.length} time machines in user record`)
+
+      // ALWAYS save to localStorage as backup - this is critical for machine persistence
       try {
         const users = JSON.parse(localStorage.getItem("chronostime_users") || "{}")
         users[user.id] = user
         localStorage.setItem("chronostime_users", JSON.stringify(users))
+        localStorage.setItem("chronostime_current_user", user.id)
+        console.log(`💾 Saved ${user.machines.length} machines to localStorage backup`)
       } catch (localError) {
-        console.warn('Failed to save to localStorage:', localError)
+        console.error('CRITICAL: Failed to save to localStorage:', localError)
+        throw new Error('Failed to save user data to local storage')
       }
 
       console.log('✅ Save complete!')
@@ -414,7 +468,7 @@ class EnhancedStorageService {
 
       console.log('✅ Login successful')
 
-      return this.mapUserFromDatabase(data)
+      return await this.mapUserFromDatabase(data)
     }, 'verifyLogin', options)
   }
 
@@ -432,14 +486,13 @@ class EnhancedStorageService {
     return passwordHash === hash
   }
 
-  private mapUserFromDatabase(data: any): User {
-    return {
-      id: data.id,
-      email: data.email,
-      username: data.username || data.name || data.email.split('@')[0],
-      balance: Number(data.balance),
-      claimedBalance: Number(data.claimed_balance),
-      machines: data.time_machines?.map((m: any) => ({
+  private async mapUserFromDatabase(data: any): Promise<User> {
+    // Load machines from both database and localStorage
+    let machines: TimeMachine[] = []
+
+    // First try to load from database
+    if (data.time_machines && Array.isArray(data.time_machines)) {
+      machines = data.time_machines.map((m: any) => ({
         id: m.id,
         level: m.level,
         name: m.name,
@@ -454,7 +507,30 @@ class EnhancedStorageService {
         maxEarnings: Number(m.max_earnings || 0),
         currentEarnings: Number(m.current_earnings || 0),
         roiPercentage: Number(m.roi_percentage || 0),
-      })) || [],
+      }))
+    }
+
+    // If no machines from database, try localStorage fallback
+    if (machines.length === 0 && typeof window !== 'undefined') {
+      try {
+        const users = JSON.parse(localStorage.getItem("chronostime_users") || "{}")
+        const localUser = users[data.id]
+        if (localUser && localUser.machines && Array.isArray(localUser.machines)) {
+          machines = localUser.machines
+          console.log(`📱 Loaded ${machines.length} machines from localStorage fallback`)
+        }
+      } catch (error) {
+        console.warn('Failed to load machines from localStorage:', error)
+      }
+    }
+
+    return {
+      id: data.id,
+      email: data.email,
+      username: data.username || data.name || data.email.split('@')[0],
+      balance: Number(data.balance),
+      claimedBalance: Number(data.claimed_balance),
+      machines: machines,
       referralCode: data.referral_code,
       referredBy: data.referred_by || undefined,
       referrals: data.referrals?.map((r: any) => r.referred_user_id) || [],
@@ -476,6 +552,126 @@ class EnhancedStorageService {
   // Generate referral code
   generateReferralCode(): string {
     return Math.random().toString(36).substring(2, 8).toUpperCase()
+  }
+
+  // Data synchronization methods
+  async syncUserData(userId: string, options?: StorageOptions): Promise<StorageResult<User | null>> {
+    return this.withErrorHandling(async () => {
+      console.log('🔄 Syncing user data for:', userId)
+
+      let databaseUser: User | null = null
+      let localUser: User | null = null
+
+      // Try to get user from database
+      try {
+        const { data, error } = await this.getSupabaseClient()
+          .from('users')
+          .select(`
+            *,
+            time_machines(*),
+            referrals:referrals!referrer_id(*)
+          `)
+          .eq('id', userId)
+          .single()
+
+        if (!error && data) {
+          databaseUser = await this.mapUserFromDatabase(data)
+        }
+      } catch (error) {
+        console.warn('Failed to load user from database:', error)
+      }
+
+      // Get user from localStorage
+      if (typeof window !== 'undefined') {
+        try {
+          const users = JSON.parse(localStorage.getItem("chronostime_users") || "{}")
+          localUser = users[userId] || null
+        } catch (error) {
+          console.warn('Failed to load user from localStorage:', error)
+        }
+      }
+
+      // Determine which version is more recent and complete
+      let syncedUser: User | null = null
+
+      if (databaseUser && localUser) {
+        // Both exist - merge them intelligently
+        const dbMachineCount = databaseUser.machines.length
+        const localMachineCount = localUser.machines.length
+
+        // Use the version with more machines, or the one with more recent updates
+        if (localMachineCount > dbMachineCount) {
+          console.log(`📱 Local user has more machines (${localMachineCount} vs ${dbMachineCount}), using local version`)
+          syncedUser = localUser
+          // Save local version to database
+          await this.saveUser(localUser)
+        } else if (dbMachineCount > localMachineCount) {
+          console.log(`🗄️ Database user has more machines (${dbMachineCount} vs ${localMachineCount}), using database version`)
+          syncedUser = databaseUser
+        } else {
+          // Same number of machines, use database version as source of truth
+          syncedUser = databaseUser
+        }
+      } else if (databaseUser) {
+        console.log('🗄️ Using database version')
+        syncedUser = databaseUser
+      } else if (localUser) {
+        console.log('📱 Using local version and syncing to database')
+        syncedUser = localUser
+        // Save local version to database
+        await this.saveUser(localUser)
+      }
+
+      if (syncedUser) {
+        // Ensure localStorage is updated with synced version
+        if (typeof window !== 'undefined') {
+          const users = JSON.parse(localStorage.getItem("chronostime_users") || "{}")
+          users[userId] = syncedUser
+          localStorage.setItem("chronostime_users", JSON.stringify(users))
+        }
+        console.log(`✅ User data synced with ${syncedUser.machines.length} machines`)
+      }
+
+      return syncedUser
+    }, 'syncUserData', options)
+  }
+
+  async validateDataIntegrity(user: User): Promise<StorageResult<boolean>> {
+    return this.withErrorHandling(async () => {
+      console.log('🔍 Validating data integrity for user:', user.email)
+
+      const issues: string[] = []
+
+      // Validate user structure
+      if (!user.id || !user.email) {
+        issues.push('Missing required user fields')
+      }
+
+      // Validate machines
+      if (user.machines) {
+        for (const machine of user.machines) {
+          if (!machine.id || !machine.name) {
+            issues.push(`Invalid machine: ${machine.id || 'unknown'}`)
+          }
+          if (machine.currentEarnings > machine.maxEarnings) {
+            issues.push(`Machine ${machine.name} has exceeded max earnings`)
+          }
+        }
+      }
+
+      // Validate balances
+      if (user.balance < 0 || user.claimedBalance < 0) {
+        issues.push('Negative balance detected')
+      }
+
+      if (issues.length > 0) {
+        console.warn('⚠️ Data integrity issues found:', issues)
+        return false
+      }
+
+      console.log('✅ Data integrity validated')
+      return true
+    }, 'validateDataIntegrity')
   }
 }
 

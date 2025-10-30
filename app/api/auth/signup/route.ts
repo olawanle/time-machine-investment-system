@@ -110,6 +110,8 @@ export async function POST(request: NextRequest) {
         await supabase.from('referrals').insert({
           referrer_id: referrer.id,
           referred_user_id: authData.user.id,
+          referral_code: referralCode,
+          bonus_earned: 5,
           created_at: new Date().toISOString(),
         })
 

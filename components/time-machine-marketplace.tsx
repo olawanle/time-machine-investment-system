@@ -18,6 +18,7 @@ import {
 } from "lucide-react"
 import { useTheme } from "next-themes"
 import Image from "next/image"
+import { enhancedStorage } from "@/lib/enhanced-storage"
 
 interface TimeMachine {
   id: number
@@ -167,14 +168,12 @@ export function TimeMachineMarketplace({ user, onPurchase, onUserUpdate }: TimeM
         totalInvested: (user.totalInvested || 0) + totalCost
       }
 
-      // Save to storage for persistence
-      try {
-        const { storage } = await import('@/lib/storage')
-        await storage.saveUser(updatedUser)
-      } catch (storageError) {
-        console.warn('Failed to save to database, using local storage fallback:', storageError)
-        // Continue with the purchase even if storage fails
+      // Save using the enhanced storage service for persistence across sessions
+      const result = await enhancedStorage.saveUser(updatedUser)
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to save user data')
       }
+      console.log('✅ Machine purchase saved via enhanced storage service')
       
       onUserUpdate(updatedUser)
       setPurchaseSuccess(`Successfully purchased ${quantity} ${machine.name} machine(s)!`)

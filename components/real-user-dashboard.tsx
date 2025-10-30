@@ -767,7 +767,7 @@ export function RealUserDashboard({ user: initialUser, onUserUpdate, onLogout }:
                       <p className="text-sm text-gray-600">Total Referrals</p>
                     </div>
                     <div className="text-center p-4 bg-green-50 rounded-lg">
-                      <p className="text-2xl font-bold text-green-600">${(user.referrals.length * 50).toFixed(2)}</p>
+                      <p className="text-2xl font-bold text-green-600">${(user.referrals.length * 5).toFixed(2)}</p>
                       <p className="text-sm text-gray-600">Referral Earnings</p>
                     </div>
                   </div>

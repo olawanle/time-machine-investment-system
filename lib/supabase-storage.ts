@@ -122,49 +122,79 @@ export const supabaseStorage = {
     const userId = localStorage.getItem("chronostime_current_user")
     if (!userId) return null
     
-    const { data, error } = await getSupabaseClient()
-      .from('users')
-      .select(`
-        *,
-        time_machines(*),
-        referrals:referrals!referrer_id(*)
-      `)
-      .eq('id', userId)
-      .single()
-    
-    if (error || !data) return null
-    
-    return {
-      id: data.id,
-      email: data.email,
-      username: data.username || data.name || data.email.split('@')[0],
-      balance: Number(data.balance),
-      claimedBalance: Number(data.claimed_balance),
-      machines: data.time_machines?.map((m: any) => ({
-        id: m.id,
-        level: m.level,
-        name: m.name,
-        description: m.description,
-        unlockedAt: Number(m.unlocked_at),
-        lastClaimedAt: Number(m.last_claimed_at),
-        isActive: m.is_active,
-        rewardAmount: Number(m.reward_amount),
-        claimIntervalMs: Number(m.claim_interval_ms),
-        icon: m.icon,
-        investmentAmount: Number(m.investment_amount || 0),
-        maxEarnings: Number(m.max_earnings || 0),
-        currentEarnings: Number(m.current_earnings || 0),
-        roiPercentage: Number(m.roi_percentage || 0),
-      })) || [],
-      referralCode: data.referral_code,
-      referredBy: data.referred_by || undefined,
-      referrals: data.referrals?.map((r: any) => r.referred_user_id) || [],
-      lastWithdrawalDate: Number(data.last_withdrawal_date),
-      createdAt: new Date(data.created_at).getTime(),
-      tier: data.tier || 'bronze',
-      totalInvested: Number(data.total_invested),
-      totalEarned: Number(data.total_earned || 0),
-      roi: Number(data.roi),
+    try {
+      const { data, error } = await getSupabaseClient()
+        .from('users')
+        .select(`
+          *,
+          time_machines(*)
+        `)
+        .eq('id', userId)
+        .single()
+      
+      if (error || !data) {
+        // Fallback to localStorage if database fails
+        console.warn('Database unavailable, using localStorage fallback')
+        const users = JSON.parse(localStorage.getItem("chronostime_users") || "{}")
+        return users[userId] || null
+      }
+      
+      // Load machines from database or localStorage fallback
+      let machines: TimeMachine[] = []
+      
+      if (data.time_machines && Array.isArray(data.time_machines)) {
+        machines = data.time_machines.map((m: any) => ({
+          id: m.id,
+          level: m.level,
+          name: m.name,
+          description: m.description,
+          unlockedAt: Number(m.unlocked_at),
+          lastClaimedAt: Number(m.last_claimed_at),
+          isActive: m.is_active,
+          rewardAmount: Number(m.reward_amount),
+          claimIntervalMs: Number(m.claim_interval_ms),
+          icon: m.icon,
+          investmentAmount: Number(m.investment_amount || 0),
+          maxEarnings: Number(m.max_earnings || 0),
+          currentEarnings: Number(m.current_earnings || 0),
+          roiPercentage: Number(m.roi_percentage || 0),
+        }))
+      } else {
+        // Try localStorage fallback for machines
+        try {
+          const users = JSON.parse(localStorage.getItem("chronostime_users") || "{}")
+          const localUser = users[userId]
+          if (localUser && localUser.machines && Array.isArray(localUser.machines)) {
+            machines = localUser.machines
+            console.log(`📱 Loaded ${machines.length} machines from localStorage fallback`)
+          }
+        } catch (error) {
+          console.warn('Failed to load machines from localStorage:', error)
+        }
+      }
+      
+      return {
+        id: data.id,
+        email: data.email,
+        username: data.username || data.name || data.email.split('@')[0],
+        balance: Number(data.balance),
+        claimedBalance: Number(data.claimed_balance),
+        machines: machines,
+        referralCode: data.referral_code,
+        referredBy: data.referred_by || undefined,
+        referrals: data.referrals?.map((r: any) => r.referred_user_id) || [],
+        lastWithdrawalDate: Number(data.last_withdrawal_date),
+        createdAt: new Date(data.created_at).getTime(),
+        tier: data.tier || 'bronze',
+        totalInvested: Number(data.total_invested),
+        totalEarned: Number(data.total_earned || 0),
+        roi: Number(data.roi),
+      }
+    } catch (error) {
+      // Complete fallback to localStorage
+      console.warn('Database completely unavailable, using localStorage fallback')
+      const users = JSON.parse(localStorage.getItem("chronostime_users") || "{}")
+      return users[userId] || null
     }
   },
 
@@ -192,6 +222,7 @@ export const supabaseStorage = {
       total_invested: user.totalInvested,
       total_earned: user.totalEarned,
       roi: user.roi,
+
       updated_at: new Date().toISOString(),
     }
 
@@ -216,7 +247,7 @@ export const supabaseStorage = {
     
     console.log('✅ User saved successfully:', savedUser)
     
-    // Update time machines
+    // Save time machines to database if table exists
     if (user.machines.length > 0) {
       console.log(`🤖 Attempting to save ${user.machines.length} time machines...`)
       try {
@@ -241,7 +272,7 @@ export const supabaseStorage = {
               roi_percentage: machine.roiPercentage,
               updated_at: new Date().toISOString(),
             })
-          
+
           if (machineError) {
             const errorMessage = machineError.message || machineError.details || 'Unknown database error'
             // If it's a schema error, just warn and continue
@@ -250,6 +281,7 @@ export const supabaseStorage = {
               break
             } else {
               console.error('❌ Error saving machine:', errorMessage)
+              throw new Error(`Failed to save machine: ${errorMessage}`)
             }
           }
         }
@@ -258,6 +290,20 @@ export const supabaseStorage = {
         console.warn('⚠️ Time machines table not available, using localStorage fallback')
       }
     }
+
+    // ALWAYS save to localStorage as backup - this is critical for machine persistence
+    try {
+      const users = JSON.parse(localStorage.getItem("chronostime_users") || "{}")
+      users[user.id] = user
+      localStorage.setItem("chronostime_users", JSON.stringify(users))
+      localStorage.setItem("chronostime_current_user", user.id)
+      console.log(`💾 Saved ${user.machines.length} machines to localStorage backup`)
+    } catch (localError) {
+      console.error('CRITICAL: Failed to save to localStorage:', localError)
+      throw new Error('Failed to save user data to local storage')
+    }
+
+    console.log(`✅ User data saved with ${user.machines.length} time machines in user record`)
     
     console.log('✅ Save complete!')
   },

@@ -63,7 +63,7 @@ export function SettingsPanel() {
           maintenance_mode: false,
           registration_open: true,
           min_withdrawal: 50,
-          referral_bonus: 50,
+          referral_bonus: 5,
           daily_bonus: 10
         })
         setLoading(false)

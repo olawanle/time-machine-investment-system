@@ -1503,7 +1503,7 @@ export function APIDashboard({ user, onLogout }: APIDashboardProps) {
       {currentSection === "advanced" && renderAdvancedDashboard()}
       {currentSection === "settings" && renderSettings()}
         {currentSection === "admin" && userData?.email === "admin@chronostime.com" && (
-          <AdminPanelV2 />
+          <AdminPanelV2 onLogout={onLogout} />
         )}
       
         {!["overview", "portfolio", "investment", "invest", "withdraw", "history", "machines", "claim", "referrals", "analytics", "notifications", "achievements", "advanced", "settings", "marketplace", "admin"].includes(currentSection) && (
