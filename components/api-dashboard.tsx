@@ -86,6 +86,42 @@ export function APIDashboard({ user, onLogout }: APIDashboardProps) {
 
   useEffect(() => {
     setMounted(true)
+    
+    // Check for payment status in URL parameters
+    const urlParams = new URLSearchParams(window.location.search)
+    const paymentStatus = urlParams.get('payment')
+    const amount = urlParams.get('amount')
+    const balance = urlParams.get('balance')
+    const reason = urlParams.get('reason')
+    
+    if (paymentStatus === 'success' && amount) {
+      setSuccess(`🎉 Payment successful! $${amount} has been added to your balance. New balance: $${balance}`)
+      // Clear URL parameters
+      window.history.replaceState({}, document.title, window.location.pathname)
+    } else if (paymentStatus === 'error') {
+      const errorMessages = {
+        missing_payment_id: 'Payment ID was missing from the callback',
+        missing_email: 'Email was missing from the callback',
+        missing_amount: 'Amount was missing from the callback',
+        user_not_found: 'User account not found',
+        invalid_amount: 'Invalid payment amount',
+        database_error: 'Database error occurred',
+        balance_update_failed: 'Failed to update balance',
+        server_error: 'Server error occurred'
+      }
+      setError(`❌ Payment failed: ${errorMessages[reason as keyof typeof errorMessages] || 'Unknown error'}`)
+      // Clear URL parameters
+      window.history.replaceState({}, document.title, window.location.pathname)
+    } else if (paymentStatus === 'failed') {
+      setError(`❌ Payment was not successful. Status: ${urlParams.get('status')}`)
+      // Clear URL parameters
+      window.history.replaceState({}, document.title, window.location.pathname)
+    } else if (paymentStatus === 'already_processed') {
+      setSuccess('ℹ️ This payment has already been processed.')
+      // Clear URL parameters
+      window.history.replaceState({}, document.title, window.location.pathname)
+    }
+    
     const interval = setInterval(async () => {
       try {
         const currentUser = await storage.getCurrentUser()
