@@ -5,9 +5,40 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Navigation } from "./navigation"
-import { Copy, Send, Users, TrendingUp, Clock } from "lucide-react"
-import { useState } from "react"
+import { Copy, Send, Users, TrendingUp, Clock, DollarSign } from "lucide-react"
+import { useState, useEffect } from "react"
 import { Badge } from "@/components/ui/badge"
+
+interface ReferralData {
+  referrals_made: Array<{
+    id: string
+    referral_code: string
+    bonus_earned: number
+    created_at: string
+    referred_user: {
+      id: string
+      email: string
+      username: string
+      name: string
+      created_at: string
+    }
+  }>
+  bonus_transactions: Array<{
+    id: string
+    amount: number
+    created_at: string
+  }>
+  statistics: {
+    total_referrals: number
+    active_referrals: number
+    total_bonus_earned: number
+    pending_referrals: number
+  }
+  user_info: {
+    referral_code: string
+    referred_by: string | null
+  }
+}
 
 interface ReferralsProps {
   user: User
@@ -17,11 +48,53 @@ interface ReferralsProps {
 
 export function Referrals({ user, onNavigate, onLogout }: ReferralsProps) {
   const [copied, setCopied] = useState(false)
+  const [referralData, setReferralData] = useState<ReferralData | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState("")
+
+  useEffect(() => {
+    fetchReferralData()
+  }, [user.id])
+
+  const fetchReferralData = async () => {
+    try {
+      setLoading(true)
+      const response = await fetch(`/api/referrals?user_id=${user.id}`)
+      const result = await response.json()
+      
+      if (result.success) {
+        setReferralData(result.data)
+      } else {
+        setError(result.error || 'Failed to fetch referral data')
+      }
+    } catch (err) {
+      console.error('Error fetching referral data:', err)
+      setError('Failed to load referral data')
+    } finally {
+      setLoading(false)
+    }
+  }
 
   const handleCopy = () => {
-    navigator.clipboard.writeText(user.referralCode)
+    const referralCode = referralData?.user_info.referral_code || user.referralCode
+    const referralLink = `${window.location.origin}?ref=${referralCode}`
+    navigator.clipboard.writeText(referralLink)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Navigation user={user} currentView="referrals" onNavigate={onNavigate} onLogout={onLogout} onAdmin={() => {}} />
+        <main className="max-w-7xl mx-auto px-4 py-12 relative z-10">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+            <p className="mt-4 text-muted-foreground">Loading referral data...</p>
+          </div>
+        </main>
+      </div>
+    )
   }
 
   return (
@@ -52,7 +125,7 @@ export function Referrals({ user, onNavigate, onLogout }: ReferralsProps) {
           <CardContent className="space-y-4">
             <div className="flex gap-3">
               <Input
-                value={`timemachine.io/ref/${user.referralCode}`}
+                value={`${typeof window !== 'undefined' ? window.location.origin : 'timemachine.io'}?ref=${referralData?.user_info.referral_code || user.referralCode}`}
                 readOnly
                 className="glass-sm font-mono text-sm"
               />
@@ -82,7 +155,7 @@ export function Referrals({ user, onNavigate, onLogout }: ReferralsProps) {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-12">
           <Card className="glass glow-cyan group hover:border-cyan-400/50 transition-all">
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
@@ -91,8 +164,25 @@ export function Referrals({ user, onNavigate, onLogout }: ReferralsProps) {
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold gradient-text-cyan">{user.referrals.length}</div>
-              <p className="text-xs text-muted-foreground mt-2">Active referrals</p>
+              <div className="text-3xl font-bold gradient-text-cyan">
+                {referralData?.statistics.total_referrals || 0}
+              </div>
+              <p className="text-xs text-muted-foreground mt-2">Total referrals</p>
+            </CardContent>
+          </Card>
+
+          <Card className="glass glow-green group hover:border-green-400/50 transition-all">
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-sm">Active Referrals</CardTitle>
+                <TrendingUp className="w-5 h-5 text-green-400 group-hover:scale-110 transition-transform" />
+              </div>
+            </CardHeader>
+            <CardContent>
+              <div className="text-3xl font-bold text-green-400">
+                {referralData?.statistics.active_referrals || 0}
+              </div>
+              <p className="text-xs text-muted-foreground mt-2">Successfully joined</p>
             </CardContent>
           </Card>
 
@@ -100,24 +190,28 @@ export function Referrals({ user, onNavigate, onLogout }: ReferralsProps) {
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-sm">Bonuses Earned</CardTitle>
-                <TrendingUp className="w-5 h-5 text-blue-400 group-hover:scale-110 transition-transform" />
+                <DollarSign className="w-5 h-5 text-blue-400 group-hover:scale-110 transition-transform" />
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold text-blue-400">+5%</div>
-              <p className="text-xs text-muted-foreground mt-2">Claim speed boost</p>
+              <div className="text-3xl font-bold text-blue-400">
+                ${referralData?.statistics.total_bonus_earned || 0}
+              </div>
+              <p className="text-xs text-muted-foreground mt-2">Total earned</p>
             </CardContent>
           </Card>
 
-          <Card className="glass glow-cyan group hover:border-cyan-400/50 transition-all">
+          <Card className="glass glow-yellow group hover:border-yellow-400/50 transition-all">
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-sm">Pending Invites</CardTitle>
-                <Clock className="w-5 h-5 text-cyan-400 group-hover:scale-110 transition-transform" />
+                <Clock className="w-5 h-5 text-yellow-400 group-hover:scale-110 transition-transform" />
               </div>
             </CardHeader>
             <CardContent>
-              <div className="text-3xl font-bold gradient-text-cyan">3</div>
+              <div className="text-3xl font-bold text-yellow-400">
+                {referralData?.statistics.pending_referrals || 0}
+              </div>
               <p className="text-xs text-muted-foreground mt-2">Awaiting activation</p>
             </CardContent>
           </Card>
@@ -160,31 +254,39 @@ export function Referrals({ user, onNavigate, onLogout }: ReferralsProps) {
                   <tr className="border-b border-border">
                     <th className="text-left py-4 px-4 text-muted-foreground font-semibold">Friend</th>
                     <th className="text-left py-4 px-4 text-muted-foreground font-semibold">Status</th>
-                    <th className="text-left py-4 px-4 text-muted-foreground font-semibold">Bonus Received</th>
+                    <th className="text-left py-4 px-4 text-muted-foreground font-semibold">Bonus Earned</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {[
-                    { name: "friend_of_time.eth", status: "Active", bonus: "+0.5% Claim Speed" },
-                    { name: "chrono_charlie", status: "Active", bonus: "+0.5% Claim Speed" },
-                    { name: "quantum_quinn", status: "Pending", bonus: "-" },
-                  ].map((ref, i) => (
-                    <tr key={i} className="border-b border-border/50 hover:bg-cyan-500/5 transition-colors">
-                      <td className="py-4 px-4 font-mono text-cyan-400">{ref.name}</td>
-                      <td className="py-4 px-4">
-                        <Badge
-                          className={
-                            ref.status === "Active"
-                              ? "bg-green-500/20 text-green-400 hover:bg-green-500/30"
-                              : "bg-yellow-500/20 text-yellow-400 hover:bg-yellow-500/30"
-                          }
-                        >
-                          {ref.status}
-                        </Badge>
+                  {referralData?.referrals_made.length ? (
+                    referralData.referrals_made.map((ref, i) => (
+                      <tr key={i} className="border-b border-border/50 hover:bg-cyan-500/5 transition-colors">
+                        <td className="py-4 px-4 font-mono text-cyan-400">
+                          {ref.referred_user?.username || ref.referred_user?.name || ref.referred_user?.email?.split('@')[0] || 'Anonymous'}
+                        </td>
+                        <td className="py-4 px-4">
+                          <Badge
+                            className={
+                              ref.referred_user?.created_at
+                                ? "bg-green-500/20 text-green-400 hover:bg-green-500/30"
+                                : "bg-yellow-500/20 text-yellow-400 hover:bg-yellow-500/30"
+                            }
+                          >
+                            {ref.referred_user?.created_at ? "Active" : "Pending"}
+                          </Badge>
+                        </td>
+                        <td className="py-4 px-4 text-cyan-400 font-semibold">
+                          ${ref.bonus_earned || 5}
+                        </td>
+                      </tr>
+                    ))
+                  ) : (
+                    <tr>
+                      <td colSpan={3} className="py-8 px-4 text-center text-muted-foreground">
+                        No referrals yet. Share your link to start earning!
                       </td>
-                      <td className="py-4 px-4 text-cyan-400 font-semibold">{ref.bonus}</td>
                     </tr>
-                  ))}
+                  )}
                 </tbody>
               </table>
             </div>
