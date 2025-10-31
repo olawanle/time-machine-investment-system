@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import React, { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -16,6 +16,7 @@ import {
   Bitcoin,
   ExternalLink
 } from "lucide-react"
+import { ManualPaymentConfirm } from "./manual-payment-confirm"
 
 interface BalanceTopupProps {
   user: any
@@ -26,35 +27,109 @@ export function BalanceTopup({ user, onUserUpdate }: BalanceTopupProps) {
   const [amount, setAmount] = useState("")
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
+  const [pollingStatus, setPollingStatus] = useState<string | null>(null)
+  const [orderId, setOrderId] = useState<string | null>(null)
 
-  const handleStartCryptoCheckout = async () => {
+  const handleStartCryptoCheckout = () => {
     try {
       setError("")
-      setLoading(true)
       const value = Number(amount)
       if (!value || value < 10) {
         setError("Enter a valid amount (min $10)")
-        setLoading(false)
         return
       }
-      const res = await fetch('/api/cpay/create-invoice', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ amount: value, userId: user.id, currency: 'USD' })
-      })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data?.error || 'Failed to create invoice')
-      if (data?.paymentUrl) {
-        window.location.href = data.paymentUrl
-      } else {
-        throw new Error('Payment URL not returned')
-      }
+
+      // Generate a unique order ID for tracking
+      const generatedOrderId = `topup_${user.id}_${Date.now()}_${value}`
+      
+      // Store payment info for tracking
+      setOrderId(generatedOrderId)
+      localStorage.setItem('pending_payment_order_id', generatedOrderId)
+      localStorage.setItem('pending_payment_amount', amount)
+      localStorage.setItem('pending_payment_user_email', user.email)
+      
+      // Open CPay checkout in new window
+      const cpayUrl = "https://checkouts.cpay.world/checkout/acb26bab-0d68-4ffa-b9f9-5ad577762fc7"
+      window.open(cpayUrl, '_blank')
+      
+      // Start polling for payment status
+      startPaymentPolling(generatedOrderId)
+      
+      setPollingStatus(`Payment window opened. Complete your $${value} payment and we'll update your balance automatically.`)
+      
     } catch (e: any) {
       setError(e?.message || 'Unable to start checkout')
-    } finally {
-      setLoading(false)
     }
   }
+
+  const startPaymentPolling = (orderIdToCheck: string) => {
+    setPollingStatus('Waiting for payment confirmation...')
+    const expectedAmount = localStorage.getItem('pending_payment_amount')
+    const startTime = Date.now()
+    
+    const pollInterval = setInterval(async () => {
+      try {
+        // Check for recent payments for this user
+        const response = await fetch('/api/payments/check-recent', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            user_id: user.id,
+            user_email: user.email,
+            expected_amount: expectedAmount ? parseFloat(expectedAmount) : null,
+            since_timestamp: startTime
+          })
+        })
+        
+        const result = await response.json()
+        
+        if (result.status === 'found') {
+          clearInterval(pollInterval)
+          setPollingStatus('Payment confirmed! Your balance has been updated.')
+          
+          // Clear stored payment info
+          localStorage.removeItem('pending_payment_order_id')
+          localStorage.removeItem('pending_payment_amount')
+          localStorage.removeItem('pending_payment_user_email')
+          
+          // Update user balance in UI
+          const updatedUser = { ...user, balance: result.new_balance }
+          onUserUpdate(updatedUser)
+          
+          // Show success message
+          setTimeout(() => {
+            setPollingStatus(null)
+            setOrderId(null)
+            setAmount("")
+          }, 3000)
+          
+        } else if (result.status === 'pending') {
+          setPollingStatus(`Payment processing... Checking for $${expectedAmount} payment.`)
+        }
+        
+      } catch (pollError) {
+        console.error('Polling error:', pollError)
+        setPollingStatus('Checking for payment confirmation...')
+      }
+    }, 8000) // Poll every 8 seconds (less frequent since we're checking recent payments)
+    
+    // Stop polling after 15 minutes
+    setTimeout(() => {
+      clearInterval(pollInterval)
+      if (pollingStatus && pollingStatus.includes('Waiting')) {
+        setPollingStatus('Payment verification taking longer than expected. Use manual confirmation below if you completed the payment.')
+      }
+    }, 900000) // 15 minutes
+  }
+
+  // Check for pending payments on component mount
+  React.useEffect(() => {
+    const pendingOrderId = localStorage.getItem('pending_payment_order_id')
+    if (pendingOrderId) {
+      setOrderId(pendingOrderId)
+      startPaymentPolling(pendingOrderId)
+    }
+  }, [])
 
   return (
     <div className="space-y-8">
@@ -76,6 +151,12 @@ export function BalanceTopup({ user, onUserUpdate }: BalanceTopupProps) {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Manual Payment Confirmation - Show if there's a pending payment or user needs it */}
+        {(orderId || pollingStatus) && (
+          <div className="lg:col-span-2">
+            <ManualPaymentConfirm user={user} onUserUpdate={onUserUpdate} />
+          </div>
+        )}
         {/* CPay Checkout Card */}
         <Card className="bg-gradient-to-br from-orange-500/10 to-amber-500/10 border-orange-500/20 shadow-lg">
           <CardHeader>
@@ -109,15 +190,19 @@ export function BalanceTopup({ user, onUserUpdate }: BalanceTopupProps) {
                 <ol className="text-sm text-muted-foreground space-y-2">
                   <li className="flex items-start gap-2">
                     <span className="font-bold text-primary">1.</span>
-                    <span>Click the "Buy with Crypto" button below</span>
+                    <span>Click "Buy with Crypto" to open CPay checkout</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="font-bold text-primary">2.</span>
-                    <span>Complete your payment on the secure CPay checkout page</span>
+                    <span>Complete your payment with any supported cryptocurrency</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="font-bold text-primary">3.</span>
-                    <span>Your balance will be updated automatically within minutes</span>
+                    <span>Return here - your balance updates automatically</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="font-bold text-primary">4.</span>
+                    <span>If needed, use manual confirmation below</span>
                   </li>
                 </ol>
               </div>
@@ -130,19 +215,26 @@ export function BalanceTopup({ user, onUserUpdate }: BalanceTopupProps) {
                     {error}
                   </div>
                 )}
+                {pollingStatus && (
+                  <div className="mb-3 text-sm text-blue-600 flex items-center gap-2 bg-blue-50 p-3 rounded-lg border border-blue-200">
+                    <CheckCircle className="w-4 h-4" />
+                    {pollingStatus}
+                  </div>
+                )}
                 <Button 
                   onClick={handleStartCryptoCheckout}
-                  disabled={loading}
+                  disabled={!amount || Number(amount) < 10}
                   className="w-full bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-semibold h-14 text-lg shadow-lg"
                 >
                   <Bitcoin className="w-6 h-6 mr-2" />
-                  {loading ? 'Creating invoice…' : 'Buy with Crypto'}
+                  Buy with Crypto
                   <ExternalLink className="w-4 h-4 ml-2" />
                 </Button>
               </div>
 
               <p className="text-xs text-muted-foreground text-center">
-                Secure payment powered by CPay • Instant processing
+                Secure payment powered by CPay • Instant processing<br/>
+                💡 After payment, return to this page to see your updated balance
               </p>
             </div>
 
@@ -269,6 +361,13 @@ export function BalanceTopup({ user, onUserUpdate }: BalanceTopupProps) {
           </div>
         </CardContent>
       </Card>
+
+      {/* Manual Payment Confirmation Section */}
+      {!orderId && !pollingStatus && (
+        <div className="mt-8">
+          <ManualPaymentConfirm user={user} onUserUpdate={onUserUpdate} />
+        </div>
+      )}
     </div>
   )
 }

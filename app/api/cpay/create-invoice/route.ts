@@ -13,7 +13,7 @@ export async function POST(req: NextRequest) {
     const baseUrl = process.env.CPAY_BASE_URL || 'https://api.cpay.com'
     const apiKey = process.env.CPAY_API_KEY
     const apiSecret = process.env.CPAY_API_SECRET
-    const webhookUrl = process.env.CPAY_WEBHOOK_URL || `${process.env.NEXT_PUBLIC_BASE_URL || ''}/api/cpay/webhook`
+    const callbackUrl = process.env.CPAY_CALLBACK_URL || `${process.env.NEXT_PUBLIC_BASE_URL || ''}/api/payments/cpay-callback`
 
     if (!apiKey || !apiSecret) {
       return NextResponse.json({ error: 'CPAY API credentials not configured' }, { status: 500 })
@@ -27,7 +27,7 @@ export async function POST(req: NextRequest) {
       orderId,
       amount,         // fiat amount
       currency,       // e.g. USD
-      callbackUrl: webhookUrl,
+      callbackUrl: callbackUrl,
       successUrl: `${process.env.NEXT_PUBLIC_BASE_URL || ''}/?payment=success`,
       cancelUrl: `${process.env.NEXT_PUBLIC_BASE_URL || ''}/?payment=cancelled`,
       metadata: { userId, type: 'balance_topup' }
