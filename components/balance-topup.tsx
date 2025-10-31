@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -13,9 +13,7 @@ import {
   Zap,
   TrendingUp,
   Bitcoin,
-  ExternalLink,
-  CreditCard,
-  X
+  ExternalLink
 } from "lucide-react"
 
 interface BalanceTopupProps {
@@ -24,53 +22,6 @@ interface BalanceTopupProps {
 }
 
 export function BalanceTopup({ user, onUserUpdate }: BalanceTopupProps) {
-  const [showPaymentModal, setShowPaymentModal] = useState(false)
-  const [paymentStatus, setPaymentStatus] = useState<{
-    type: 'success' | 'error' | null
-    message: string
-  }>({ type: null, message: '' })
-
-  // Listen for messages from payment iframe
-  useEffect(() => {
-    const handleMessage = (event: MessageEvent) => {
-      // Only accept messages from our payment domain
-      if (event.origin !== 'https://checkouts.chronostime.fund' && 
-          !event.data?.type?.startsWith('PAYMENT_')) {
-        return
-      }
-
-      if (event.data.type === 'PAYMENT_SUCCESS') {
-        setPaymentStatus({
-          type: 'success',
-          message: event.data.message || 'Payment successful!'
-        })
-        
-        // Update user data to reflect new balance
-        if (onUserUpdate && event.data.balance) {
-          const updatedUser = { ...user, balance: event.data.balance }
-          onUserUpdate(updatedUser)
-        }
-        
-        // Auto-close modal after showing success
-        setTimeout(() => {
-          setShowPaymentModal(false)
-          setPaymentStatus({ type: null, message: '' })
-        }, 3000)
-      } else if (event.data.type === 'PAYMENT_ERROR') {
-        setPaymentStatus({
-          type: 'error',
-          message: event.data.message || 'Payment failed'
-        })
-      } else if (event.data.type === 'CLOSE_PAYMENT_MODAL') {
-        setShowPaymentModal(false)
-        setPaymentStatus({ type: null, message: '' })
-      }
-    }
-
-    window.addEventListener('message', handleMessage)
-    return () => window.removeEventListener('message', handleMessage)
-  })
-
   return (
     <div className="space-y-8">
       {/* Header */}
@@ -125,14 +76,22 @@ export function BalanceTopup({ user, onUserUpdate }: BalanceTopupProps) {
               </div>
 
               {/* CPay Checkout Button */}
-              <Button 
-                onClick={() => setShowPaymentModal(true)}
-                className="w-full bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-semibold h-14 text-lg shadow-lg"
-              >
-                <Bitcoin className="w-6 h-6 mr-2" />
-                Buy with Crypto
-                <CreditCard className="w-4 h-4 ml-2" />
-              </Button>
+              <div>
+                <a 
+                  className="buy-with-crypto block"
+                  href="https://checkouts.chronostime.fund/checkout/acb26bab-0d68-4ffa-b9f9-5ad577762fc7"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <Button 
+                    className="w-full bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-semibold h-14 text-lg shadow-lg"
+                  >
+                    <Bitcoin className="w-6 h-6 mr-2" />
+                    Buy with Crypto
+                    <ExternalLink className="w-4 h-4 ml-2" />
+                  </Button>
+                </a>
+              </div>
 
               <p className="text-xs text-muted-foreground text-center">
                 Secure payment powered by CPay • Instant processing
@@ -263,70 +222,5 @@ export function BalanceTopup({ user, onUserUpdate }: BalanceTopupProps) {
         </CardContent>
       </Card>
     </div>
-
-    {/* Payment Modal with Iframe */}
-    {showPaymentModal && (
-      <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-        <div className="bg-background border border-border rounded-lg w-full max-w-4xl h-[80vh] relative">
-          {/* Modal Header */}
-          <div className="flex items-center justify-between p-4 border-b border-border">
-            <div className="flex items-center gap-2">
-              <Bitcoin className="w-5 h-5 text-orange-500" />
-              <h3 className="text-lg font-semibold">Cryptocurrency Payment</h3>
-            </div>
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setShowPaymentModal(false)}
-              className="h-8 w-8 p-0"
-            >
-              <X className="w-4 h-4" />
-            </Button>
-          </div>
-          
-          {/* Payment Status */}
-          {paymentStatus.type && (
-            <div className={`mx-4 mt-4 p-3 rounded-lg border ${
-              paymentStatus.type === 'success' 
-                ? 'bg-green-500/10 border-green-500/20 text-green-400' 
-                : 'bg-red-500/10 border-red-500/20 text-red-400'
-            }`}>
-              <div className="flex items-center gap-2">
-                {paymentStatus.type === 'success' ? (
-                  <CheckCircle className="w-4 h-4" />
-                ) : (
-                  <AlertCircle className="w-4 h-4" />
-                )}
-                <span className="text-sm font-medium">{paymentStatus.message}</span>
-              </div>
-            </div>
-          )}
-          
-          {/* Payment Iframe */}
-          <div className="p-4 h-[calc(100%-80px)]">
-            <iframe
-              src="https://checkouts.chronostime.fund/checkout/acb26bab-0d68-4ffa-b9f9-5ad577762fc7"
-              className="w-full h-full border-0 rounded-lg"
-              title="Cryptocurrency Payment"
-              allow="payment"
-            />
-          </div>
-          
-          {/* Modal Footer */}
-          <div className="absolute bottom-0 left-0 right-0 p-4 bg-background border-t border-border rounded-b-lg">
-            <div className="flex items-center justify-between text-sm text-muted-foreground">
-              <div className="flex items-center gap-2">
-                <CheckCircle className="w-4 h-4 text-green-500" />
-                <span>Secure payment powered by ChronosTime</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <Zap className="w-4 h-4 text-yellow-500" />
-                <span>Balance updates automatically</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    )}
   )
 }

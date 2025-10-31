@@ -264,12 +264,18 @@ export function Marketplace({ user, onNavigate, onLogout }: MarketplaceProps) {
                 <p className="text-muted-foreground">
                   To purchase this time machine, please top up your balance first using cryptocurrency.
                 </p>
-                <Button 
-                  onClick={() => window.location.href = '/balance-topup'}
-                  className="bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white"
-                >
-                  Top Up Balance with Crypto
-                </Button>
+                <div>
+                  <a 
+                    className="buy-with-crypto"
+                    href="https://checkouts.chronostime.fund/checkout/acb26bab-0d68-4ffa-b9f9-5ad577762fc7"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    <Button className="bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white">
+                      Top Up Balance with Crypto
+                    </Button>
+                  </a>
+                </div>
                 <p className="text-xs text-muted-foreground">
                   After topping up, you can purchase this time machine directly with your balance.
                 </p>
