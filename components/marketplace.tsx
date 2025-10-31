@@ -264,15 +264,12 @@ export function Marketplace({ user, onNavigate, onLogout }: MarketplaceProps) {
                 <p className="text-muted-foreground">
                   To purchase this time machine, please top up your balance first using cryptocurrency.
                 </p>
-                <a
-                  href="https://checkouts.cpay.world/checkout/acb26bab-0d68-4ffa-b9f9-5ad577762fc7"
-                  target="_blank"
-                  rel="noopener noreferrer"
+                <Button 
+                  onClick={() => window.location.href = '/balance-topup'}
+                  className="bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white"
                 >
-                  <Button className="bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white">
-                    Top Up Balance with Crypto
-                  </Button>
-                </a>
+                  Top Up Balance with Crypto
+                </Button>
                 <p className="text-xs text-muted-foreground">
                   After topping up, you can purchase this time machine directly with your balance.
                 </p>
