@@ -141,47 +141,20 @@ export function TimeMachineMarketplace({ user, onPurchase, onUserUpdate }: TimeM
     }
 
     try {
-      // Create new machines with proper structure
-      const newMachines = Array(quantity).fill(null).map((_, index) => ({
-        id: `${machine.id}-${Date.now()}-${index}`,
-        level: machine.id,
-        name: machine.name,
-        description: machine.description,
-        price: machine.price,
-        weeklyReturn: machine.weeklyReturn,
-        unlockedAt: Date.now(),
-        lastClaimedAt: 0,
-        isActive: true,
-        rewardAmount: machine.weeklyReturn,
-        claimIntervalMs: 7 * 24 * 60 * 60 * 1000, // 7 days
-        icon: "⏰",
-        investmentAmount: machine.price,
-        maxEarnings: machine.price * 2, // 200% ROI cap
-        currentEarnings: 0,
-        roiPercentage: 20
-      }))
+      const res = await fetch('/api/machines/purchase', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: user.id, machine, quantity })
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(data?.error || 'Purchase failed')
 
-      const updatedUser = {
-        ...user,
-        balance: userBalance - totalCost,
-        machines: [...userMachines, ...newMachines],
-        totalInvested: (user.totalInvested || 0) + totalCost
-      }
-
-      // Save using the enhanced storage service for persistence across sessions
-      const result = await enhancedStorage.saveUser(updatedUser)
-      if (!result.success) {
-        throw new Error(result.error || 'Failed to save user data')
-      }
-      console.log('✅ Machine purchase saved via enhanced storage service')
-      
-      onUserUpdate(updatedUser)
       setPurchaseSuccess(`Successfully purchased ${quantity} ${machine.name} machine(s)!`)
       setShowPurchaseModal(false)
       setSelectedMachine(null)
       setQuantity(1)
-    } catch (error) {
-      setPurchaseError("Purchase failed. Please try again.")
+    } catch (error: any) {
+      setPurchaseError(error?.message || "Purchase failed. Please try again.")
     }
   }
 

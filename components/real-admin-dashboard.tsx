@@ -42,7 +42,8 @@ export function RealAdminDashboard({ user, onUserUpdate }: RealAdminDashboardPro
   const [userActivities, setUserActivities] = useState<UserActivity[]>([])
   const [recentTransactions, setRecentTransactions] = useState<Transaction[]>([])
   const [realTimeMetrics, setRealTimeMetrics] = useState<any>(null)
-  const [selectedTab, setSelectedTab] = useState<'overview' | 'users' | 'transactions' | 'analytics'>('overview')
+  const [selectedTab, setSelectedTab] = useState<'overview' | 'users' | 'transactions' | 'analytics' | 'topups'>('overview')
+  const [topups, setTopups] = useState<any[]>([])
 
   const successToast = useSuccessToast()
   const errorToast = useErrorToast()
@@ -60,17 +61,19 @@ export function RealAdminDashboard({ user, onUserUpdate }: RealAdminDashboardPro
       setIsLoading(true)
       setError(null)
 
-      const [stats, activities, transactions, metrics] = await Promise.all([
+      const [stats, activities, transactions, metrics, topupsRes] = await Promise.all([
         realDataService.getPlatformStats(),
         realDataService.getUserActivities(),
         realDataService.getRecentTransactions(50),
-        realDataService.getRealTimeMetrics()
+        realDataService.getRealTimeMetrics(),
+        fetch('/api/admin/topups', { cache: 'no-store' }).then(r => r.json()).catch(() => ({ topups: [] }))
       ])
 
       setPlatformStats(stats)
       setUserActivities(activities)
       setRecentTransactions(transactions)
       setRealTimeMetrics(metrics)
+      setTopups(topupsRes?.topups || [])
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to load dashboard data'
       setError(errorMessage)
@@ -239,6 +242,48 @@ export function RealAdminDashboard({ user, onUserUpdate }: RealAdminDashboardPro
           </CardContent>
         </Card>
       )}
+
+      {/* Top-ups Panel */}
+      <Card className="bg-card border-border">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Wallet className="w-5 h-5 text-primary" />
+            Recent Top-ups
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {topups.length === 0 ? (
+            <div className="text-sm text-muted-foreground">No top-ups found.</div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-left text-muted-foreground border-b border-border">
+                    <th className="py-2 pr-4">Time</th>
+                    <th className="py-2 pr-4">Order ID</th>
+                    <th className="py-2 pr-4">User</th>
+                    <th className="py-2 pr-4">Amount</th>
+                    <th className="py-2 pr-4">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {topups.map((t) => (
+                    <tr key={t.id} className="border-b border-border/50">
+                      <td className="py-2 pr-4">{new Date(t.created_at).toLocaleString()}</td>
+                      <td className="py-2 pr-4 font-mono truncate max-w-[240px]" title={t.order_id}>{t.order_id}</td>
+                      <td className="py-2 pr-4">{t.user_id}</td>
+                      <td className="py-2 pr-4">${Number(t.amount || 0).toLocaleString()}</td>
+                      <td className="py-2 pr-4">
+                        <Badge className="bg-success/20 text-success">{t.status || 'credited'}</Badge>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Platform Statistics */}
       {platformStats && (

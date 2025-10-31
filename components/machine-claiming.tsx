@@ -38,59 +38,15 @@ export function MachineClaiming({ user, onUserUpdate }: MachineClaimingProps) {
     setClaiming(machineId)
 
     try {
-      const machine = userMachines.find((m: any) => m.id === machineId)
-      if (!machine) {
-        setClaimError("Machine not found")
-        return
-      }
+      const res = await fetch('/api/machines/claim', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: user.id, machineId })
+      })
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(data?.error || 'Failed to claim')
 
-      const now = Date.now()
-      const timeSinceLastClaim = now - machine.lastClaimedAt
-      const claimInterval = machine.claimIntervalMs || (7 * 24 * 60 * 60 * 1000) // 7 days default
-
-      if (timeSinceLastClaim < claimInterval) {
-        const timeRemaining = claimInterval - timeSinceLastClaim
-        const hoursRemaining = Math.ceil(timeRemaining / (60 * 60 * 1000))
-        setClaimError(`Please wait ${hoursRemaining} hours before claiming again`)
-        return
-      }
-
-      // Calculate reward amount
-      const rewardAmount = machine.rewardAmount || machine.weeklyReturn || 0
-      
-      // Check if machine has reached max earnings
-      const currentEarnings = machine.currentEarnings || 0
-      const maxEarnings = machine.maxEarnings || (machine.investmentAmount * 2)
-      
-      if (currentEarnings >= maxEarnings) {
-        setClaimError("This machine has reached its maximum earnings limit")
-        return
-      }
-
-      // Update machine and user
-      const updatedMachines = userMachines.map((m: any) => 
-        m.id === machineId 
-          ? {
-              ...m,
-              lastClaimedAt: now,
-              currentEarnings: Math.min(currentEarnings + rewardAmount, maxEarnings)
-            }
-          : m
-      )
-
-      const updatedUser = {
-        ...user,
-        machines: updatedMachines,
-        balance: userBalance + rewardAmount,
-        claimedBalance: (user.claimedBalance || 0) + rewardAmount
-      }
-
-      // Save using the proper storage service for persistence across sessions
-      await storage.saveUser(updatedUser)
-      console.log('✅ Machine claim saved via storage service')
-
-      onUserUpdate(updatedUser)
-      setClaimSuccess(`Successfully claimed $${rewardAmount} from ${machine.name}!`)
+      setClaimSuccess(`Successfully claimed $${(data?.reward || 0)}!`)
       
       // Auto-hide success message after 3 seconds
       setTimeout(() => setClaimSuccess(""), 3000)
@@ -343,3 +299,4 @@ export function MachineClaiming({ user, onUserUpdate }: MachineClaimingProps) {
     </div>
   )
 }
+

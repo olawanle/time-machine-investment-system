@@ -13,7 +13,7 @@
 ### **HTML Structure**:
 ```html
 <div>
-  <a class="buy-with-crypto" href="https://checkouts.chronostime.fund/checkout/acb26bab-0d68-4ffa-b9f9-5ad577762fc7">
+  <a class="buy-with-crypto" href="https://checkouts.cpay.world/checkout/acb26bab-0d68-4ffa-b9f9-5ad577762fc7">
     Buy with Crypto
   </a>
 </div>
@@ -53,7 +53,7 @@
 ## 🔧 Technical Details
 
 ### **Payment URL**:
-- **Checkout**: `https://checkouts.chronostime.fund/checkout/acb26bab-0d68-4ffa-b9f9-5ad577762fc7`
+- **Checkout**: `https://checkouts.cpay.world/checkout/acb26bab-0d68-4ffa-b9f9-5ad577762fc7`
 - **Callback**: `https://your-domain.vercel.app/api/payments/cpay-callback`
 
 ### **CSS Class**:

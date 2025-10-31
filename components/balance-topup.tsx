@@ -3,6 +3,7 @@
 import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { 
   Wallet, 
@@ -22,6 +23,39 @@ interface BalanceTopupProps {
 }
 
 export function BalanceTopup({ user, onUserUpdate }: BalanceTopupProps) {
+  const [amount, setAmount] = useState("")
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState("")
+
+  const handleStartCryptoCheckout = async () => {
+    try {
+      setError("")
+      setLoading(true)
+      const value = Number(amount)
+      if (!value || value < 10) {
+        setError("Enter a valid amount (min $10)")
+        setLoading(false)
+        return
+      }
+      const res = await fetch('/api/cpay/create-invoice', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amount: value, userId: user.id, currency: 'USD' })
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data?.error || 'Failed to create invoice')
+      if (data?.paymentUrl) {
+        window.location.href = data.paymentUrl
+      } else {
+        throw new Error('Payment URL not returned')
+      }
+    } catch (e: any) {
+      setError(e?.message || 'Unable to start checkout')
+    } finally {
+      setLoading(false)
+    }
+  }
+
   return (
     <div className="space-y-8">
       {/* Header */}
@@ -56,6 +90,19 @@ export function BalanceTopup({ user, onUserUpdate }: BalanceTopupProps) {
                 Buy crypto securely and add funds to your ChronosTime account instantly.
               </p>
 
+              {/* Amount Input */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-foreground">Amount (USD)</label>
+                <Input
+                  type="number"
+                  min="10"
+                  placeholder="Enter amount e.g. 100"
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                  className="bg-background border-border"
+                />
+              </div>
+
               {/* Payment Instructions */}
               <div className="bg-background/50 rounded-lg p-4 space-y-3">
                 <h4 className="font-medium text-sm">How it works:</h4>
@@ -77,20 +124,21 @@ export function BalanceTopup({ user, onUserUpdate }: BalanceTopupProps) {
 
               {/* CPay Checkout Button */}
               <div>
-                <a 
-                  className="buy-with-crypto block"
-                  href="https://checkouts.chronostime.fund/checkout/acb26bab-0d68-4ffa-b9f9-5ad577762fc7"
-                  target="_blank"
-                  rel="noopener noreferrer"
+                {error && (
+                  <div className="mb-3 text-sm text-destructive flex items-center gap-2">
+                    <AlertCircle className="w-4 h-4" />
+                    {error}
+                  </div>
+                )}
+                <Button 
+                  onClick={handleStartCryptoCheckout}
+                  disabled={loading}
+                  className="w-full bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-semibold h-14 text-lg shadow-lg"
                 >
-                  <Button 
-                    className="w-full bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-semibold h-14 text-lg shadow-lg"
-                  >
-                    <Bitcoin className="w-6 h-6 mr-2" />
-                    Buy with Crypto
-                    <ExternalLink className="w-4 h-4 ml-2" />
-                  </Button>
-                </a>
+                  <Bitcoin className="w-6 h-6 mr-2" />
+                  {loading ? 'Creating invoice…' : 'Buy with Crypto'}
+                  <ExternalLink className="w-4 h-4 ml-2" />
+                </Button>
               </div>
 
               <p className="text-xs text-muted-foreground text-center">
@@ -224,3 +272,4 @@ export function BalanceTopup({ user, onUserUpdate }: BalanceTopupProps) {
     </div>
   )
 }
+
