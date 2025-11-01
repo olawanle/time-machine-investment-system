@@ -48,6 +48,25 @@ export async function GET(request: NextRequest) {
 
     if (machinesError) {
       console.error('Error fetching machines:', machinesError)
+      
+      // If table doesn't exist, return empty data instead of error
+      if (machinesError.message?.includes('relation') || machinesError.message?.includes('does not exist')) {
+        console.log('⚠️ Time machines table does not exist yet, returning empty data')
+        return NextResponse.json({
+          success: true,
+          data: {
+            machines: [],
+            statistics: {
+              total_machines: 0,
+              total_investment: 0,
+              total_earnings: 0,
+              total_claimable: 0,
+              active_machines: 0
+            }
+          }
+        })
+      }
+      
       return NextResponse.json({
         error: 'Failed to fetch machines'
       }, { status: 500 })

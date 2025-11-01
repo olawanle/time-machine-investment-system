@@ -21,10 +21,10 @@ import { ModernSidebar } from "@/components/modern-sidebar"
 import { ModernUserDashboard } from "@/components/modern-user-dashboard"
 import { RealAnalytics } from "@/components/real-analytics"
 import { ActivityFeed } from "@/components/activity-feed"
-import { TimeMachineMarketplace } from "@/components/time-machine-marketplace"
+import { DatabaseMarketplace } from "@/components/database-marketplace"
 import { InvestmentAnalytics } from "@/components/investment-analytics"
 import { BalanceTopup } from "@/components/balance-topup"
-import { MachineClaiming } from "@/components/machine-claiming"
+import { DatabaseMachineClaiming } from "@/components/database-machine-claiming"
 import { WorkflowOverview } from "@/components/workflow-overview"
 import { MobileNavigation } from "@/components/mobile-navigation"
 import { LiveUserCounter, TransactionTicker, SecurityBadges } from "@/components/trust-indicators"
@@ -1491,9 +1491,8 @@ export function APIDashboard({ user, onLogout }: APIDashboardProps) {
       )}
         {currentSection === "marketplace" && (
           <div className="p-6">
-            <TimeMachineMarketplace 
+            <DatabaseMarketplace 
               user={userData}
-              onPurchase={(machineId) => handleMachinePurchase(machineId, 1)}
               onUserUpdate={setUserData}
             />
           </div>
@@ -1526,7 +1525,7 @@ export function APIDashboard({ user, onLogout }: APIDashboardProps) {
       {currentSection === "machines" && renderMachines()}
       {currentSection === "claim" && (
         <div className="p-4 lg:p-6">
-          <MachineClaiming 
+          <DatabaseMachineClaiming 
             user={userData}
             onUserUpdate={setUserData}
           />

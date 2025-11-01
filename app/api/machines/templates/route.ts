@@ -29,6 +29,67 @@ export async function GET(request: NextRequest) {
 
     if (templatesError) {
       console.error('Error fetching machine templates:', templatesError)
+      
+      // If table doesn't exist, return default templates
+      if (templatesError.message?.includes('relation') || templatesError.message?.includes('does not exist')) {
+        console.log('⚠️ Machine templates table does not exist yet, returning default templates')
+        
+        const defaultTemplates = [
+          {
+            id: '1',
+            machine_type: 'basic_miner',
+            name: 'Basic Time Miner',
+            description: 'Entry-level time machine for beginners',
+            base_price: 50.00,
+            base_reward: 2.50,
+            claim_interval_hours: 24,
+            roi_percentage: 5.00,
+            max_level: 10,
+            icon_url: '/icons/basic-miner.svg',
+            is_available: true,
+            tier: 'bronze',
+            metrics: {
+              daily_reward: 2.50,
+              weekly_reward: 17.50,
+              monthly_reward: 75.00,
+              yearly_reward: 912.50,
+              payback_days: 20,
+              claim_frequency: 'Every 24 hours'
+            }
+          },
+          {
+            id: '2',
+            machine_type: 'advanced_miner',
+            name: 'Advanced Time Miner',
+            description: 'Improved efficiency and higher rewards',
+            base_price: 150.00,
+            base_reward: 8.75,
+            claim_interval_hours: 24,
+            roi_percentage: 5.83,
+            max_level: 10,
+            icon_url: '/icons/advanced-miner.svg',
+            is_available: true,
+            tier: 'silver',
+            metrics: {
+              daily_reward: 8.75,
+              weekly_reward: 61.25,
+              monthly_reward: 262.50,
+              yearly_reward: 3193.75,
+              payback_days: 17,
+              claim_frequency: 'Every 24 hours'
+            }
+          }
+        ]
+        
+        return NextResponse.json({
+          success: true,
+          data: {
+            templates: defaultTemplates,
+            total_templates: defaultTemplates.length
+          }
+        })
+      }
+      
       return NextResponse.json({
         error: 'Failed to fetch machine templates'
       }, { status: 500 })

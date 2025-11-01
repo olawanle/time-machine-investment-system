@@ -12,6 +12,7 @@ import { SupremeAdminDashboard } from "@/components/supreme-admin-dashboard"
 import { RealUserDashboard } from "@/components/real-user-dashboard"
 import { ErrorBoundary } from "@/components/ui/error-boundary"
 import { ToastProvider } from "@/components/ui/toast-system"
+import { DatabaseInitializer } from "@/components/database-initializer"
 import { type User } from "@/lib/storage"
 import { authService } from "@/lib/auth-service"
 import { enhancedStorage } from "@/lib/enhanced-storage"
@@ -163,7 +164,8 @@ export default function Home() {
   return (
     <ThemeProvider>
       <ToastProvider>
-        <ErrorBoundary>
+        <DatabaseInitializer>
+          <ErrorBoundary>
         {view === "landing" && (
           <LandingPage onGetStarted={() => setView("auth")} />
         )}
@@ -192,15 +194,13 @@ export default function Home() {
       )}
 
       {(view === "dashboard" || view === "marketplace" || view === "referrals" || view === "settings") && user && (
-        <Dashboard
+        <APIDashboard
           user={user}
           onLogout={handleLogout}
-          currentView={view}
-          onNavigate={(newView: string) => setView(newView as typeof view)}
-          onNavigateToAdmin={() => setView("admin")}
         />
         )}
-        </ErrorBoundary>
+          </ErrorBoundary>
+        </DatabaseInitializer>
       </ToastProvider>
     </ThemeProvider>
   )
