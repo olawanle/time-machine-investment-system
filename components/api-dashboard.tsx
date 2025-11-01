@@ -1491,8 +1491,9 @@ export function APIDashboard({ user, onLogout }: APIDashboardProps) {
       )}
         {currentSection === "marketplace" && (
           <div className="p-6">
-            <DatabaseMarketplace 
+            <TimeMachineMarketplace 
               user={userData}
+              onPurchase={(machineId) => handleMachinePurchase(machineId, 1)}
               onUserUpdate={setUserData}
             />
           </div>
@@ -1525,7 +1526,7 @@ export function APIDashboard({ user, onLogout }: APIDashboardProps) {
       {currentSection === "machines" && renderMachines()}
       {currentSection === "claim" && (
         <div className="p-4 lg:p-6">
-          <DatabaseMachineClaiming 
+          <MachineClaiming 
             user={userData}
             onUserUpdate={setUserData}
           />
