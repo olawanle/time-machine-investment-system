@@ -17,6 +17,7 @@ import {
   ExternalLink
 } from "lucide-react"
 import { ManualPaymentConfirm } from "./manual-payment-confirm"
+import { IframePayment } from "./iframe-payment"
 
 interface BalanceTopupProps {
   user: any
@@ -29,6 +30,7 @@ export function BalanceTopup({ user, onUserUpdate }: BalanceTopupProps) {
   const [error, setError] = useState("")
   const [pollingStatus, setPollingStatus] = useState<string | null>(null)
   const [orderId, setOrderId] = useState<string | null>(null)
+  const [showPaymentIframe, setShowPaymentIframe] = useState(false)
 
   const handleStartCryptoCheckout = () => {
     try {
@@ -48,14 +50,13 @@ export function BalanceTopup({ user, onUserUpdate }: BalanceTopupProps) {
       localStorage.setItem('pending_payment_amount', amount)
       localStorage.setItem('pending_payment_user_email', user.email)
       
-      // Open CPay checkout in new window
-      const cpayUrl = "https://checkouts.cpay.world/checkout/acb26bab-0d68-4ffa-b9f9-5ad577762fc7"
-      window.open(cpayUrl, '_blank')
+      // Show iframe payment instead of opening new window
+      setShowPaymentIframe(true)
       
       // Start polling for payment status
       startPaymentPolling(generatedOrderId)
       
-      setPollingStatus(`Payment window opened. Complete your $${value} payment and we'll update your balance automatically.`)
+      setPollingStatus(`Complete your $${value} payment below. Your balance will update automatically.`)
       
     } catch (e: any) {
       setError(e?.message || 'Unable to start checkout')
@@ -96,11 +97,12 @@ export function BalanceTopup({ user, onUserUpdate }: BalanceTopupProps) {
           const updatedUser = { ...user, balance: result.new_balance }
           onUserUpdate(updatedUser)
           
-          // Show success message
+          // Show success message and hide iframe
           setTimeout(() => {
             setPollingStatus(null)
             setOrderId(null)
             setAmount("")
+            setShowPaymentIframe(false)
           }, 3000)
           
         } else if (result.status === 'pending') {
@@ -127,9 +129,40 @@ export function BalanceTopup({ user, onUserUpdate }: BalanceTopupProps) {
     const pendingOrderId = localStorage.getItem('pending_payment_order_id')
     if (pendingOrderId) {
       setOrderId(pendingOrderId)
+      setShowPaymentIframe(true)
       startPaymentPolling(pendingOrderId)
     }
   }, [])
+
+  // Handle iframe messages for payment completion
+  React.useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      // Only accept messages from CPay domain
+      if (event.origin !== 'https://checkouts.cpay.world') {
+        return
+      }
+
+      if (event.data.type === 'payment_completed') {
+        console.log('Payment completed in iframe:', event.data)
+        setPollingStatus('Payment completed! Verifying and updating your balance...')
+        
+        // Force a status check
+        if (orderId) {
+          setTimeout(() => {
+            startPaymentPolling(orderId)
+          }, 2000)
+        }
+      } else if (event.data.type === 'payment_cancelled') {
+        console.log('Payment cancelled in iframe')
+        setShowPaymentIframe(false)
+        setPollingStatus(null)
+        setError('Payment was cancelled. Please try again.')
+      }
+    }
+
+    window.addEventListener('message', handleMessage)
+    return () => window.removeEventListener('message', handleMessage)
+  }, [orderId])
 
   return (
     <div className="space-y-8">
@@ -149,6 +182,46 @@ export function BalanceTopup({ user, onUserUpdate }: BalanceTopupProps) {
           <span className="text-lg font-bold text-primary">${(user.balance || 0).toLocaleString()}</span>
         </div>
       </div>
+
+      {/* Enhanced Iframe Payment Section */}
+      {showPaymentIframe && orderId && (
+        <div className="mb-8">
+          <IframePayment
+            amount={amount}
+            orderId={orderId}
+            user={user}
+            onPaymentComplete={(success, creditedAmount) => {
+              if (success && creditedAmount) {
+                setPollingStatus(`Payment completed! $${creditedAmount} has been added to your balance.`)
+                
+                // Update user balance in UI
+                const updatedUser = { ...user, balance: (user.balance || 0) + creditedAmount }
+                onUserUpdate(updatedUser)
+                
+                // Clear payment state
+                setTimeout(() => {
+                  setShowPaymentIframe(false)
+                  setPollingStatus(null)
+                  setOrderId(null)
+                  setAmount("")
+                  
+                  // Clear stored payment info
+                  localStorage.removeItem('pending_payment_order_id')
+                  localStorage.removeItem('pending_payment_amount')
+                  localStorage.removeItem('pending_payment_user_email')
+                }, 3000)
+              } else {
+                setError('Payment failed. Please try again or use manual confirmation.')
+              }
+            }}
+            onClose={() => {
+              setShowPaymentIframe(false)
+              setPollingStatus(null)
+              setError('Payment cancelled. You can try again anytime.')
+            }}
+          />
+        </div>
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         {/* Manual Payment Confirmation - Show if there's a pending payment or user needs it */}
@@ -190,19 +263,19 @@ export function BalanceTopup({ user, onUserUpdate }: BalanceTopupProps) {
                 <ol className="text-sm text-muted-foreground space-y-2">
                   <li className="flex items-start gap-2">
                     <span className="font-bold text-primary">1.</span>
-                    <span>Click "Buy with Crypto" to open CPay checkout</span>
+                    <span>Click "Buy with Crypto" to open secure checkout</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="font-bold text-primary">2.</span>
-                    <span>Complete your payment with any supported cryptocurrency</span>
+                    <span>Complete payment directly on this page (no redirects)</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="font-bold text-primary">3.</span>
-                    <span>Return here - your balance updates automatically</span>
+                    <span>Your balance updates automatically within seconds</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="font-bold text-primary">4.</span>
-                    <span>If needed, use manual confirmation below</span>
+                    <span>Manual confirmation available if needed</span>
                   </li>
                 </ol>
               </div>
@@ -234,7 +307,7 @@ export function BalanceTopup({ user, onUserUpdate }: BalanceTopupProps) {
 
               <p className="text-xs text-muted-foreground text-center">
                 Secure payment powered by CPay • Instant processing<br/>
-                💡 After payment, return to this page to see your updated balance
+                💡 Payment opens directly on this page - no redirects needed
               </p>
             </div>
 
