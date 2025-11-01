@@ -1,59 +1,99 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient as createSB } from '@supabase/supabase-js'
+import { createClient } from '@supabase/supabase-js'
 
-export async function POST(req: NextRequest) {
+/**
+ * Machine Claim API Endpoint
+ * 
+ * POST /api/machines/claim - Claim rewards from a time machine
+ */
+
+export async function POST(request: NextRequest) {
   try {
-    const { userId, machineId } = await req.json()
-    if (!userId || !machineId) return NextResponse.json({ error: 'userId and machineId required' }, { status: 400 })
+    const { user_id, machine_id } = await request.json()
 
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-    const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    const sb = createSB(supabaseUrl, serviceKey)
-
-    const { data: machine, error: mErr } = await sb
-      .from('time_machines')
-      .select('*')
-      .eq('id', machineId)
-      .eq('user_id', userId)
-      .single()
-
-    if (mErr || !machine) return NextResponse.json({ error: 'Machine not found' }, { status: 404 })
-
-    const now = Date.now()
-    const claimInterval = Number(machine.claim_interval_ms || 7 * 24 * 60 * 60 * 1000)
-    const lastClaimed = Number(machine.last_claimed_at || 0)
-    if (now - lastClaimed < claimInterval) {
-      return NextResponse.json({ error: 'Not ready to claim' }, { status: 400 })
+    if (!user_id || !machine_id) {
+      return NextResponse.json({
+        error: 'Missing required fields: user_id and machine_id'
+      }, { status: 400 })
     }
 
-    const reward = Number(machine.reward_amount || 0)
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false
+        }
+      }
+    )
 
-    // Update machine and user atomically best-effort
-    const { error: upMErr } = await sb
-      .from('time_machines')
-      .update({ last_claimed_at: now })
-      .eq('id', machineId)
-      .eq('user_id', userId)
-
-    if (upMErr) return NextResponse.json({ error: 'Failed to update machine' }, { status: 500 })
-
-    const { data: userRow, error: uErr } = await sb.from('users').select('*').eq('id', userId).single()
-    if (uErr || !userRow) return NextResponse.json({ error: 'User not found' }, { status: 404 })
-
-    const { error: upUErr } = await sb
-      .from('users')
-      .update({
-        balance: Number(userRow.balance || 0) + reward,
-        claimed_balance: Number(userRow.claimed_balance || 0) + reward,
+    // Use the database function to claim reward
+    const { data: claimResult, error: claimError } = await supabase
+      .rpc('claim_machine_reward', {
+        machine_id: machine_id,
+        claiming_user_id: user_id
       })
-      .eq('id', userId)
 
-    if (upUErr) return NextResponse.json({ error: 'Failed to credit user' }, { status: 500 })
+    if (claimError) {
+      console.error('Error claiming machine reward:', claimError)
+      return NextResponse.json({
+        error: 'Failed to claim reward'
+      }, { status: 500 })
+    }
 
-    return NextResponse.json({ ok: true, reward })
-  } catch (e: any) {
-    return NextResponse.json({ error: e?.message || 'Unknown error' }, { status: 500 })
+    const result = claimResult[0]
+
+    if (!result.success) {
+      return NextResponse.json({
+        error: result.message
+      }, { status: 400 })
+    }
+
+    // Get updated user balance
+    const { data: user, error: userError } = await supabase
+      .from('users')
+      .select('balance, total_earned')
+      .eq('id', user_id)
+      .single()
+
+    if (userError) {
+      console.error('Error fetching updated user:', userError)
+    }
+
+    // Get updated machine info
+    const { data: machine, error: machineError } = await supabase
+      .from('time_machines')
+      .select('*, machine_templates(name)')
+      .eq('id', machine_id)
+      .single()
+
+    if (machineError) {
+      console.error('Error fetching updated machine:', machineError)
+    }
+
+    return NextResponse.json({
+      success: true,
+      reward_amount: result.reward_amount,
+      message: result.message,
+      new_balance: user?.balance || 0,
+      total_earned: user?.total_earned || 0,
+      machine: machine,
+      claim_timestamp: new Date().toISOString()
+    })
+
+  } catch (error) {
+    console.error('Machine claim error:', error)
+    return NextResponse.json({
+      error: 'Internal server error'
+    }, { status: 500 })
   }
 }
 
-
+export async function GET(request: NextRequest) {
+  return NextResponse.json({
+    message: 'Machine claim endpoint',
+    usage: 'POST with user_id and machine_id to claim rewards',
+    timestamp: new Date().toISOString()
+  })
+}
