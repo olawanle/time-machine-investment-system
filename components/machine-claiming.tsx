@@ -16,77 +16,20 @@ import {
 } from "lucide-react"
 import Image from "next/image"
 import { useTheme } from "next-themes"
+import { storage } from "@/lib/storage"
+
 interface MachineClaimingProps {
   user: any
   onUserUpdate: (user: any) => void
-}
-
-interface TimeMachine {
-  id: string
-  machine_type: string
-  name: string
-  description: string
-  investment_amount: number
-  reward_amount: number
-  claim_interval_hours: number
-  current_earnings: number
-  is_active: boolean
-  last_claimed_at: string | null
-  claimable_amount: number
-  next_claim_time: string | null
-  can_claim: boolean
-  machine_templates?: {
-    name: string
-    description: string
-    icon_url: string
-    tier: string
-  }
-}
-
-interface MachineData {
-  machines: TimeMachine[]
-  statistics: {
-    total_machines: number
-    total_investment: number
-    total_earnings: number
-    total_claimable: number
-    active_machines: number
-  }
 }
 
 export function MachineClaiming({ user, onUserUpdate }: MachineClaimingProps) {
   const [claiming, setClaiming] = useState<string | null>(null)
   const [claimError, setClaimError] = useState("")
   const [claimSuccess, setClaimSuccess] = useState("")
-  const [machineData, setMachineData] = useState<MachineData | null>(null)
-  const [loading, setLoading] = useState(true)
   const { theme } = useTheme()
 
-  // Fetch user's machines from database
-  useEffect(() => {
-    fetchMachines()
-  }, [user.id])
-
-  const fetchMachines = async () => {
-    try {
-      setLoading(true)
-      const response = await fetch(`/api/machines?user_id=${user.id}`)
-      const result = await response.json()
-      
-      if (result.success) {
-        setMachineData(result.data)
-      } else {
-        setClaimError(result.error || 'Failed to fetch machines')
-      }
-    } catch (error) {
-      console.error('Error fetching machines:', error)
-      setClaimError('Failed to load machines')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const userMachines = machineData?.machines || []
+  const userMachines = user.machines || []
   const userBalance = user.balance || 0
 
   const handleClaim = async (machineId: string) => {

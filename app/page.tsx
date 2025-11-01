@@ -12,7 +12,7 @@ import { SupremeAdminDashboard } from "@/components/supreme-admin-dashboard"
 import { RealUserDashboard } from "@/components/real-user-dashboard"
 import { ErrorBoundary } from "@/components/ui/error-boundary"
 import { ToastProvider } from "@/components/ui/toast-system"
-
+import { DatabaseInitializer } from "@/components/database-initializer"
 import { type User } from "@/lib/storage"
 import { authService } from "@/lib/auth-service"
 import { enhancedStorage } from "@/lib/enhanced-storage"
@@ -32,15 +32,26 @@ export default function Home() {
     const loadUser = async () => {
       try {
         setError(null)
-        // Use simple localStorage-based storage
-        const currentUser = await authService.getCurrentUser()
+        // Use enhanced storage service which handles syncing between database and localStorage
+        const result = await enhancedStorage.getCurrentUser()
+        let currentUser = result.success ? result.data : null
+        
+        // If we have a user, ensure data is synced across storage systems
+        if (currentUser) {
+          console.log(`📱 Loaded user with ${currentUser.machines.length} machines`)
+          // Trigger sync to ensure consistency
+          const syncResult = await enhancedStorage.syncUserData(currentUser.id)
+          if (syncResult.success && syncResult.data) {
+            currentUser = syncResult.data
+          }
+        }
         if (currentUser) {
           setUser(currentUser)
           // Check if user is admin and redirect accordingly
           if (currentUser.email === "admin@chronostime.com") {
             setView("admin")
           } else {
-            setView("dashboard") // Switch to dashboard view after login
+            setView("api") // Switch to API view after login
           }
         }
       } catch (error) {
@@ -59,7 +70,7 @@ export default function Home() {
     if (newUser.email === "admin@chronostime.com") {
       setView("admin")
     } else {
-      setView("dashboard") // Switch to dashboard view after login
+      setView("api") // Switch to API view after login
     }
   }
 
@@ -153,7 +164,8 @@ export default function Home() {
   return (
     <ThemeProvider>
       <ToastProvider>
-        <ErrorBoundary>
+        <DatabaseInitializer>
+          <ErrorBoundary>
         {view === "landing" && (
           <LandingPage onGetStarted={() => setView("auth")} />
         )}
@@ -182,15 +194,13 @@ export default function Home() {
       )}
 
       {(view === "dashboard" || view === "marketplace" || view === "referrals" || view === "settings") && user && (
-        <Dashboard
+        <APIDashboard
           user={user}
           onLogout={handleLogout}
-          currentView={view}
-          onNavigate={(newView: string) => setView(newView as typeof view)}
-          onNavigateToAdmin={() => setView("admin")}
         />
         )}
-        </ErrorBoundary>
+          </ErrorBoundary>
+        </DatabaseInitializer>
       </ToastProvider>
     </ThemeProvider>
   )
