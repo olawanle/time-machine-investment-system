@@ -31,49 +31,45 @@ export function ManualPaymentConfirm({ user, onUserUpdate }: ManualPaymentConfir
       setSuccess("")
       setLoading(true)
 
-      if (!paymentId || !amount) {
-        setError("Please enter both payment ID and amount")
+      if (!paymentId) {
+        setError("Please enter the payment ID from your CPay receipt")
         return
       }
 
-      const numAmount = parseFloat(amount)
-      if (isNaN(numAmount) || numAmount <= 0) {
-        setError("Please enter a valid amount")
-        return
-      }
-
-      const response = await fetch('/api/payments/manual-confirm', {
+      // Remove amount input - we'll verify the actual amount from CPay
+      const response = await fetch('/api/payments/verify-and-confirm', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           payment_id: paymentId,
           user_email: user.email,
-          amount: numAmount,
-          notes: `Manual confirmation by user ${user.email}`
+          user_id: user.id
         })
       })
 
       const result = await response.json()
 
       if (!response.ok) {
-        throw new Error(result.error || 'Failed to confirm payment')
+        throw new Error(result.error || 'Failed to verify payment')
       }
 
-      setSuccess(`Payment confirmed! $${numAmount} has been added to your balance.`)
-      
-      // Update user balance in UI
-      const updatedUser = { 
-        ...user, 
-        balance: result.new_balance || (user.balance + numAmount) 
-      }
-      onUserUpdate(updatedUser)
+      if (result.success) {
+        setSuccess(`Payment verified! $${result.amount_credited} has been added to your balance.`)
+        
+        // Update user balance in UI
+        const updatedUser = { 
+          ...user, 
+          balance: result.new_balance
+        }
+        onUserUpdate(updatedUser)
 
-      // Clear form
-      setPaymentId("")
-      setAmount("")
+        // Clear form
+        setPaymentId("")
+        setAmount("")
+      }
 
     } catch (err: any) {
-      setError(err.message || 'Failed to confirm payment')
+      setError(err.message || 'Failed to verify payment')
     } finally {
       setLoading(false)
     }
@@ -118,19 +114,17 @@ export function ManualPaymentConfirm({ user, onUserUpdate }: ManualPaymentConfir
             </p>
           </div>
 
-          <div>
-            <label className="text-sm font-medium text-foreground mb-2 block">
-              Amount (USD)
-            </label>
-            <Input
-              type="number"
-              min="1"
-              step="0.01"
-              placeholder="Enter the amount you paid"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              className="bg-background border-border"
-            />
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+            <div className="flex items-start gap-2">
+              <AlertCircle className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+              <div>
+                <h4 className="font-medium text-blue-800 mb-1">Secure Payment Verification</h4>
+                <p className="text-sm text-blue-700">
+                  We'll automatically verify the payment amount from CPay using your payment ID. 
+                  No need to enter the amount manually for security reasons.
+                </p>
+              </div>
+            </div>
           </div>
 
           <div className="bg-background/50 rounded-lg p-3">
@@ -160,11 +154,11 @@ export function ManualPaymentConfirm({ user, onUserUpdate }: ManualPaymentConfir
 
           <Button 
             onClick={handleManualConfirm}
-            disabled={loading || !paymentId || !amount}
+            disabled={loading || !paymentId}
             className="w-full bg-gradient-to-r from-yellow-500 to-orange-500 hover:from-yellow-600 hover:to-orange-600 text-white font-semibold"
           >
             <DollarSign className="w-4 h-4 mr-2" />
-            {loading ? 'Confirming Payment...' : 'Confirm Payment'}
+            {loading ? 'Verifying Payment...' : 'Verify & Confirm Payment'}
           </Button>
 
           <div className="text-xs text-muted-foreground text-center space-y-1">
