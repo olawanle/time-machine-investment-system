@@ -18,7 +18,7 @@ import {
 } from "lucide-react"
 import { useTheme } from "next-themes"
 import Image from "next/image"
-import { enhancedStorage } from "@/lib/enhanced-storage"
+
 
 interface TimeMachine {
   id: number
@@ -120,10 +120,33 @@ export function TimeMachineMarketplace({ user, onPurchase, onUserUpdate }: TimeM
   const [showPurchaseModal, setShowPurchaseModal] = useState(false)
   const [purchaseError, setPurchaseError] = useState("")
   const [purchaseSuccess, setPurchaseSuccess] = useState("")
+  const [userMachines, setUserMachines] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
   const { theme } = useTheme()
 
-  const userMachines = user.machines || []
   const userBalance = user.balance || 0
+
+  // Fetch user's machines from database
+  useEffect(() => {
+    const fetchUserMachines = async () => {
+      if (!user?.id) return
+      
+      try {
+        const res = await fetch(`/api/original-machines?user_id=${user.id}`)
+        const data = await res.json()
+        
+        if (res.ok) {
+          setUserMachines(data.machines || [])
+        }
+      } catch (error) {
+        console.error('Error fetching user machines:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+    
+    fetchUserMachines()
+  }, [user?.id])
 
   const handlePurchase = async (machine: TimeMachine) => {
     setPurchaseError("")
@@ -141,18 +164,38 @@ export function TimeMachineMarketplace({ user, onPurchase, onUserUpdate }: TimeM
     }
 
     try {
-      const res = await fetch('/api/machines/purchase', {
+      const res = await fetch('/api/original-machines', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userId: user.id, machine, quantity })
+        body: JSON.stringify({ 
+          user_id: user.id, 
+          machine_level: machine.id, 
+          quantity 
+        })
       })
-      const data = await res.json().catch(() => ({}))
+      const data = await res.json()
       if (!res.ok) throw new Error(data?.error || 'Purchase failed')
 
       setPurchaseSuccess(`Successfully purchased ${quantity} ${machine.name} machine(s)!`)
       setShowPurchaseModal(false)
       setSelectedMachine(null)
       setQuantity(1)
+      
+      // Update user data with new balance and refresh machines
+      const updatedUser = {
+        ...user,
+        balance: data.new_balance,
+        totalInvested: (user.totalInvested || 0) + totalCost
+      }
+      onUserUpdate(updatedUser)
+      
+      // Refresh user machines
+      const machinesRes = await fetch(`/api/original-machines?user_id=${user.id}`)
+      const machinesData = await machinesRes.json()
+      if (machinesRes.ok) {
+        setUserMachines(machinesData.machines || [])
+      }
+      
     } catch (error: any) {
       setPurchaseError(error?.message || "Purchase failed. Please try again.")
     }

@@ -45,12 +45,37 @@ export function RealUserDashboard({ user: initialUser, onUserUpdate, onLogout }:
   const [walletAddress, setWalletAddress] = useState("")
   const [error, setError] = useState("")
   const [success, setSuccess] = useState("")
+  const [userMachines, setUserMachines] = useState<any[]>([])
+  const [machinesLoading, setMachinesLoading] = useState(true)
   const { theme, toggleTheme } = useTheme()
   const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
     setMounted(true)
   }, [])
+
+  // Fetch user machines from database
+  useEffect(() => {
+    const fetchUserMachines = async () => {
+      if (!user?.id) return
+      
+      try {
+        setMachinesLoading(true)
+        const res = await fetch(`/api/original-machines?user_id=${user.id}`)
+        const data = await res.json()
+        
+        if (res.ok) {
+          setUserMachines(data.machines || [])
+        }
+      } catch (error) {
+        console.error('Error fetching user machines:', error)
+      } finally {
+        setMachinesLoading(false)
+      }
+    }
+    
+    fetchUserMachines()
+  }, [user?.id])
 
   useEffect(() => {
     const interval = setInterval(async () => {
@@ -78,37 +103,63 @@ export function RealUserDashboard({ user: initialUser, onUserUpdate, onLogout }:
       return
     }
 
-    const updatedUser = { ...user }
-    updatedUser.balance += amount
-    updatedUser.totalInvested += amount
-
-    const portfolioCount = updatedUser.machines.length
-    if (portfolioCount < 5 && updatedUser.balance >= (portfolioCount + 1) * 100) {
-      const newMachine: TimeMachine = {
-        id: generateId(),
-        level: portfolioCount + 1,
-        name: `Machine ${portfolioCount + 1}`,
-        description: `Time Machine Level ${portfolioCount + 1}`,
-        unlockedAt: Date.now(),
-        lastClaimedAt: Date.now(),
-        isActive: true,
-        rewardAmount: 20 + portfolioCount * 5,
-        claimIntervalMs: 7 * 24 * 60 * 60 * 1000,
-        icon: "⚡",
-        investmentAmount: (portfolioCount + 1) * 100,
-        maxEarnings: ((portfolioCount + 1) * 100) * 2,
-        currentEarnings: 0,
-        roiPercentage: 15 + portfolioCount * 2
-      }
-      updatedUser.machines.push(newMachine)
-      updatedUser.balance -= newMachine.investmentAmount
-      setSuccess(`Machine ${newMachine.level} unlocked!`)
+    // Determine machine level based on amount
+    let machineLevel = 1
+    if (amount >= 1000) machineLevel = 5
+    else if (amount >= 750) machineLevel = 4
+    else if (amount >= 500) machineLevel = 3
+    else if (amount >= 250) machineLevel = 2
+    else if (amount >= 100) machineLevel = 1
+    else {
+      setError("Minimum investment is $100")
+      return
     }
 
-    await storage.saveUser(updatedUser)
-    setUser(updatedUser)
-    onUserUpdate(updatedUser)
-    setInvestAmount("")
+    if (userMachines.length >= 5) {
+      setError("Maximum 5 machines allowed per user")
+      return
+    }
+
+    if (user.balance < amount) {
+      setError("Insufficient balance")
+      return
+    }
+
+    try {
+      const res = await fetch('/api/original-machines', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          user_id: user.id, 
+          machine_level: machineLevel, 
+          quantity: 1 
+        })
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data?.error || 'Purchase failed')
+
+      setSuccess(`Successfully purchased Time Machine Level ${machineLevel}!`)
+      
+      // Update user balance
+      const updatedUser = {
+        ...user,
+        balance: data.new_balance,
+        totalInvested: (user.totalInvested || 0) + amount
+      }
+      setUser(updatedUser)
+      onUserUpdate(updatedUser)
+      
+      // Refresh machines
+      const machinesRes = await fetch(`/api/original-machines?user_id=${user.id}`)
+      const machinesData = await machinesRes.json()
+      if (machinesRes.ok) {
+        setUserMachines(machinesData.machines || [])
+      }
+      
+      setInvestAmount("")
+    } catch (error: any) {
+      setError(error?.message || "Investment failed. Please try again.")
+    }
   }
 
   const handleWithdraw = async () => {
@@ -160,21 +211,40 @@ export function RealUserDashboard({ user: initialUser, onUserUpdate, onLogout }:
   }
 
   const handleClaimRewards = async (machineId: string) => {
-    const updatedUser = { ...user }
-    const machine = updatedUser.machines.find((m) => m.id === machineId)
-
-    if (machine && machine.isActive) {
-      const timeSinceLastClaim = Date.now() - machine.lastClaimedAt
-      if (timeSinceLastClaim >= machine.claimIntervalMs) {
-        updatedUser.claimedBalance += machine.rewardAmount
-        machine.lastClaimedAt = Date.now()
-        machine.currentEarnings += machine.rewardAmount
-        
-        await storage.saveUser(updatedUser)
-        setUser(updatedUser)
-        onUserUpdate(updatedUser)
-        setSuccess(`Claimed ${formatCurrency(machine.rewardAmount)} from ${machine.name}!`)
+    try {
+      const res = await fetch('/api/original-machines/claim', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          user_id: user.id,
+          machine_id: machineId
+        })
+      })
+      
+      const data = await res.json()
+      if (!res.ok) throw new Error(data?.error || 'Failed to claim rewards')
+      
+      setSuccess(`Claimed ${formatCurrency(data.reward_amount)}!`)
+      
+      // Update user balance
+      const updatedUser = {
+        ...user,
+        balance: data.new_balance,
+        claimedBalance: (user.claimedBalance || 0) + data.reward_amount,
+        totalEarned: data.total_earned
       }
+      setUser(updatedUser)
+      onUserUpdate(updatedUser)
+      
+      // Refresh machines to get updated claim status
+      const machinesRes = await fetch(`/api/original-machines?user_id=${user.id}`)
+      const machinesData = await machinesRes.json()
+      if (machinesRes.ok) {
+        setUserMachines(machinesData.machines || [])
+      }
+      
+    } catch (error: any) {
+      setError(error.message || 'Failed to claim rewards')
     }
   }
 
@@ -322,7 +392,7 @@ export function RealUserDashboard({ user: initialUser, onUserUpdate, onLogout }:
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="text-sm font-medium text-gray-600">Active Machines</p>
-                        <p className="text-2xl font-bold text-gray-900">{user.machines.length}/5</p>
+                        <p className="text-2xl font-bold text-gray-900">{userMachines.length}/5</p>
                       </div>
                       <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
                         <Zap className="w-6 h-6 text-purple-600" />
@@ -369,7 +439,7 @@ export function RealUserDashboard({ user: initialUser, onUserUpdate, onLogout }:
                         onChange={(e) => setInvestAmount(e.target.value)}
                         className="mt-1"
                       />
-                      <p className="text-xs text-gray-500 mt-1">Current machines: {user.machines.length}/5</p>
+                      <p className="text-xs text-gray-500 mt-1">Current machines: {userMachines.length}/5</p>
                     </div>
                     
                     {error && <p className="text-red-600 text-sm">{error}</p>}
@@ -378,9 +448,9 @@ export function RealUserDashboard({ user: initialUser, onUserUpdate, onLogout }:
                     <Button 
                       onClick={handleInvest} 
                       className="w-full bg-blue-600 hover:bg-blue-700"
-                      disabled={user.machines.length >= 5}
+                      disabled={userMachines.length >= 5}
                     >
-                      {user.machines.length >= 5 ? "Maximum Machines Reached" : "Invest & Unlock Machine"}
+                      {userMachines.length >= 5 ? "Maximum Machines Reached" : "Invest & Unlock Machine"}
                     </Button>
                   </CardContent>
                 </Card>
@@ -432,18 +502,17 @@ export function RealUserDashboard({ user: initialUser, onUserUpdate, onLogout }:
               </div>
 
               {/* Active Time Machines */}
-              {user.machines.length > 0 && (
+              {userMachines.length > 0 && (
                 <Card>
                   <CardHeader>
                     <CardTitle>Active Time Machines</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-4">
-                      {user.machines.map((machine, index) => {
-                        const timeSinceLastClaim = Date.now() - machine.lastClaimedAt
-                        const canClaim = timeSinceLastClaim >= machine.claimIntervalMs
-                        const timeUntilNextClaim = machine.claimIntervalMs - timeSinceLastClaim
-                        const hoursUntilClaim = Math.max(0, Math.ceil(timeUntilNextClaim / (1000 * 60 * 60)))
+                      {userMachines.map((machine, index) => {
+                        const canClaim = machine.can_claim
+                        const nextClaimTime = machine.next_claim_time ? new Date(machine.next_claim_time) : null
+                        const hoursUntilClaim = nextClaimTime ? Math.max(0, Math.ceil((nextClaimTime.getTime() - Date.now()) / (1000 * 60 * 60))) : 0
 
                         return (
                           <div key={machine.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
@@ -452,16 +521,16 @@ export function RealUserDashboard({ user: initialUser, onUserUpdate, onLogout }:
                                 <Zap className="w-6 h-6 text-blue-600" />
                               </div>
                               <div>
-                                <h4 className="font-medium text-gray-900">Machine {index + 1}</h4>
+                                <h4 className="font-medium text-gray-900">{machine.machine_name}</h4>
                                 <p className="text-sm text-gray-600">
-                                  Reward: ${machine.rewardAmount} • 
+                                  Daily Reward: ${machine.daily_return || (machine.weekly_return / 7).toFixed(2)} • 
                                   {canClaim ? " Ready to claim!" : ` Next claim in ${hoursUntilClaim}h`}
                                 </p>
                               </div>
                             </div>
                             <div className="flex items-center gap-2">
-                              <Badge variant={machine.isActive ? "default" : "secondary"}>
-                                {machine.isActive ? "Active" : "Inactive"}
+                              <Badge variant={machine.is_active ? "default" : "secondary"}>
+                                {machine.is_active ? "Active" : "Inactive"}
                               </Badge>
                               <Button
                                 onClick={() => handleClaimRewards(machine.id)}
@@ -469,7 +538,7 @@ export function RealUserDashboard({ user: initialUser, onUserUpdate, onLogout }:
                                 size="sm"
                                 variant={canClaim ? "default" : "outline"}
                               >
-                                {canClaim ? "Claim" : "Pending"}
+                                {canClaim ? `Claim $${machine.claimable_amount || 0}` : "Pending"}
                               </Button>
                             </div>
                           </div>
@@ -519,9 +588,9 @@ export function RealUserDashboard({ user: initialUser, onUserUpdate, onLogout }:
                   <Button 
                     onClick={handleInvest} 
                     className="w-full bg-blue-600 hover:bg-blue-700"
-                    disabled={user.machines.length >= 5}
+                    disabled={userMachines.length >= 5}
                   >
-                    {user.machines.length >= 5 ? "Maximum Machines Reached" : "Create Investment"}
+                    {userMachines.length >= 5 ? "Maximum Machines Reached" : "Create Investment"}
                   </Button>
                 </CardContent>
               </Card>
@@ -564,28 +633,28 @@ export function RealUserDashboard({ user: initialUser, onUserUpdate, onLogout }:
                 </Card>
               </div>
 
-              {user.machines.length > 0 ? (
+              {userMachines.length > 0 ? (
                 <Card>
                   <CardHeader>
                     <CardTitle>Your Time Machines</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-4">
-                      {user.machines.map((machine, index) => (
+                      {userMachines.map((machine, index) => (
                         <div key={machine.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
                           <div className="flex items-center gap-4">
                             <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
                               <Zap className="w-6 h-6 text-blue-600" />
                             </div>
                             <div>
-                              <h4 className="font-medium text-gray-900">{machine.name}</h4>
+                              <h4 className="font-medium text-gray-900">{machine.machine_name}</h4>
                               <p className="text-sm text-gray-600">
-                                Invested: ${machine.investmentAmount} • Earned: ${machine.currentEarnings}
+                                Invested: ${machine.purchase_price} • Earned: ${machine.total_claimed || 0}
                               </p>
                             </div>
                           </div>
-                          <Badge variant={machine.isActive ? "default" : "secondary"}>
-                            {machine.isActive ? "Active" : "Inactive"}
+                          <Badge variant={machine.is_active ? "default" : "secondary"}>
+                            {machine.is_active ? "Active" : "Inactive"}
                           </Badge>
                         </div>
                       ))}
@@ -665,35 +734,38 @@ export function RealUserDashboard({ user: initialUser, onUserUpdate, onLogout }:
             <div className="space-y-6">
               <h2 className="text-2xl font-semibold text-gray-900">My Time Machines</h2>
               
-              {user.machines.length > 0 ? (
+              {userMachines.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {user.machines.map((machine, index) => {
-                    const timeSinceLastClaim = Date.now() - machine.lastClaimedAt
-                    const canClaim = timeSinceLastClaim >= machine.claimIntervalMs
-                    const timeUntilNextClaim = machine.claimIntervalMs - timeSinceLastClaim
-                    const hoursUntilClaim = Math.max(0, Math.ceil(timeUntilNextClaim / (1000 * 60 * 60)))
+                  {userMachines.map((machine, index) => {
+                    const canClaim = machine.can_claim
+                    const nextClaimTime = machine.next_claim_time ? new Date(machine.next_claim_time) : null
+                    const hoursUntilClaim = nextClaimTime ? Math.max(0, Math.ceil((nextClaimTime.getTime() - Date.now()) / (1000 * 60 * 60))) : 0
 
                     return (
                       <Card key={machine.id}>
                         <CardHeader>
                           <CardTitle className="flex items-center gap-2">
                             <Zap className="w-5 h-5 text-blue-600" />
-                            Machine {index + 1}
+                            {machine.machine_name}
                           </CardTitle>
                         </CardHeader>
                         <CardContent className="space-y-4">
                           <div className="space-y-2">
                             <div className="flex justify-between">
                               <span className="text-sm text-gray-600">Invested:</span>
-                              <span className="text-sm font-medium">${machine.investmentAmount}</span>
+                              <span className="text-sm font-medium">${machine.purchase_price}</span>
                             </div>
                             <div className="flex justify-between">
-                              <span className="text-sm text-gray-600">Earned:</span>
-                              <span className="text-sm font-medium text-green-600">${machine.currentEarnings}</span>
+                              <span className="text-sm text-gray-600">Total Earned:</span>
+                              <span className="text-sm font-medium text-green-600">${machine.total_claimed || 0}</span>
                             </div>
                             <div className="flex justify-between">
-                              <span className="text-sm text-gray-600">Next Reward:</span>
-                              <span className="text-sm font-medium">${machine.rewardAmount}</span>
+                              <span className="text-sm text-gray-600">Daily Return:</span>
+                              <span className="text-sm font-medium">${machine.daily_return || (machine.weekly_return / 7).toFixed(2)}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-sm text-gray-600">Claimable:</span>
+                              <span className="text-sm font-medium text-blue-600">${machine.claimable_amount || 0}</span>
                             </div>
                           </div>
                           
@@ -703,7 +775,7 @@ export function RealUserDashboard({ user: initialUser, onUserUpdate, onLogout }:
                                 onClick={() => handleClaimRewards(machine.id)}
                                 className="w-full bg-green-600 hover:bg-green-700"
                               >
-                                Claim ${machine.rewardAmount}
+                                Claim ${machine.claimable_amount || 0}
                               </Button>
                             ) : (
                               <Button disabled className="w-full">
