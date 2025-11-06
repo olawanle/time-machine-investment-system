@@ -13,11 +13,10 @@ import {
   ArrowRight,
   Zap,
   TrendingUp,
-  Bitcoin,
-  ExternalLink
+  CreditCard,
+  Shield,
+  Clock
 } from "lucide-react"
-import { ManualPaymentConfirm } from "./manual-payment-confirm"
-import { IframePayment } from "./iframe-payment"
 
 interface BalanceTopupProps {
   user: any
@@ -28,141 +27,53 @@ export function BalanceTopup({ user, onUserUpdate }: BalanceTopupProps) {
   const [amount, setAmount] = useState("")
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
-  const [pollingStatus, setPollingStatus] = useState<string | null>(null)
-  const [orderId, setOrderId] = useState<string | null>(null)
-  const [showPaymentIframe, setShowPaymentIframe] = useState(false)
+  const [success, setSuccess] = useState("")
 
-  const handleStartCryptoCheckout = () => {
+  const handleStripeCheckout = async () => {
     try {
       setError("")
+      setSuccess("")
+      setLoading(true)
+
       const value = Number(amount)
       if (!value || value < 10) {
-        setError("Enter a valid amount (min $10)")
+        setError("Enter a valid amount (minimum $10)")
         return
       }
 
-      // Generate a unique order ID for tracking
-      const generatedOrderId = `topup_${user.id}_${Date.now()}_${value}`
-      
-      // Store payment info for tracking
-      setOrderId(generatedOrderId)
-      localStorage.setItem('pending_payment_order_id', generatedOrderId)
-      localStorage.setItem('pending_payment_amount', amount)
-      localStorage.setItem('pending_payment_user_email', user.email)
-      
-      // Show iframe payment instead of opening new window
-      setShowPaymentIframe(true)
-      
-      // Start polling for payment status
-      startPaymentPolling(generatedOrderId)
-      
-      setPollingStatus(`Complete your $${value} payment below. Your balance will update automatically.`)
-      
+      if (value > 10000) {
+        setError("Maximum amount is $10,000 per transaction")
+        return
+      }
+
+      // Create Stripe checkout session
+      const response = await fetch('/api/payments/create-checkout-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          amount: value,
+          user_id: user.id,
+          user_email: user.email
+        })
+      })
+
+      const result = await response.json()
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to create checkout session')
+      }
+
+      // Redirect to Stripe checkout
+      window.location.href = result.checkout_url
+
     } catch (e: any) {
       setError(e?.message || 'Unable to start checkout')
+    } finally {
+      setLoading(false)
     }
   }
 
-  const startPaymentPolling = (orderIdToCheck: string) => {
-    setPollingStatus('Waiting for payment confirmation...')
-    const expectedAmount = localStorage.getItem('pending_payment_amount')
-    const startTime = Date.now()
-    
-    const pollInterval = setInterval(async () => {
-      try {
-        // Check for recent payments for this user
-        const response = await fetch('/api/payments/check-recent', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            user_id: user.id,
-            user_email: user.email,
-            expected_amount: expectedAmount ? parseFloat(expectedAmount) : null,
-            since_timestamp: startTime
-          })
-        })
-        
-        const result = await response.json()
-        
-        if (result.status === 'found') {
-          clearInterval(pollInterval)
-          setPollingStatus('Payment confirmed! Your balance has been updated.')
-          
-          // Clear stored payment info
-          localStorage.removeItem('pending_payment_order_id')
-          localStorage.removeItem('pending_payment_amount')
-          localStorage.removeItem('pending_payment_user_email')
-          
-          // Update user balance in UI
-          const updatedUser = { ...user, balance: result.new_balance }
-          onUserUpdate(updatedUser)
-          
-          // Show success message and hide iframe
-          setTimeout(() => {
-            setPollingStatus(null)
-            setOrderId(null)
-            setAmount("")
-            setShowPaymentIframe(false)
-          }, 3000)
-          
-        } else if (result.status === 'pending') {
-          setPollingStatus(`Payment processing... Checking for $${expectedAmount} payment.`)
-        }
-        
-      } catch (pollError) {
-        console.error('Polling error:', pollError)
-        setPollingStatus('Checking for payment confirmation...')
-      }
-    }, 8000) // Poll every 8 seconds (less frequent since we're checking recent payments)
-    
-    // Stop polling after 15 minutes
-    setTimeout(() => {
-      clearInterval(pollInterval)
-      if (pollingStatus && pollingStatus.includes('Waiting')) {
-        setPollingStatus('Payment verification taking longer than expected. Use manual confirmation below if you completed the payment.')
-      }
-    }, 900000) // 15 minutes
-  }
-
-  // Check for pending payments on component mount
-  React.useEffect(() => {
-    const pendingOrderId = localStorage.getItem('pending_payment_order_id')
-    if (pendingOrderId) {
-      setOrderId(pendingOrderId)
-      setShowPaymentIframe(true)
-      startPaymentPolling(pendingOrderId)
-    }
-  }, [])
-
-  // Handle iframe messages for payment completion
-  React.useEffect(() => {
-    const handleMessage = (event: MessageEvent) => {
-      // Only accept messages from CPay domain
-      if (event.origin !== 'https://checkouts.cpay.world') {
-        return
-      }
-
-      if (event.data.type === 'payment_completed') {
-        console.log('Payment completed in iframe:', event.data)
-        setPollingStatus('Payment completed! Verifying and updating your balance...')
-        
-        // Force a status check
-        if (orderId) {
-          setTimeout(() => {
-            startPaymentPolling(orderId)
-          }, 2000)
-        }
-      } else if (event.data.type === 'payment_cancelled') {
-        console.log('Payment cancelled in iframe')
-        setShowPaymentIframe(false)
-        setPollingStatus(null)
-        setError('Payment was cancelled. Please try again.')
-      }
-    }
-
-    window.addEventListener('message', handleMessage)
-    return () => window.removeEventListener('message', handleMessage)
-  }, [orderId])
+  const quickAmounts = [50, 100, 250, 500, 1000]
 
   return (
     <div className="space-y-8">
@@ -172,7 +83,7 @@ export function BalanceTopup({ user, onUserUpdate }: BalanceTopupProps) {
           Top Up Your Balance
         </h1>
         <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-          Add funds to your account using cryptocurrency to purchase time machines and start earning passive income.
+          Add funds to your account securely with Stripe to purchase time machines and start earning passive income.
         </p>
         
         {/* Current Balance */}
@@ -183,65 +94,19 @@ export function BalanceTopup({ user, onUserUpdate }: BalanceTopupProps) {
         </div>
       </div>
 
-      {/* Enhanced Iframe Payment Section */}
-      {showPaymentIframe && orderId && (
-        <div className="mb-8">
-          <IframePayment
-            amount={amount}
-            orderId={orderId}
-            user={user}
-            onPaymentComplete={(success, creditedAmount) => {
-              if (success && creditedAmount) {
-                setPollingStatus(`Payment completed! $${creditedAmount} has been added to your balance.`)
-                
-                // Update user balance in UI
-                const updatedUser = { ...user, balance: (user.balance || 0) + creditedAmount }
-                onUserUpdate(updatedUser)
-                
-                // Clear payment state
-                setTimeout(() => {
-                  setShowPaymentIframe(false)
-                  setPollingStatus(null)
-                  setOrderId(null)
-                  setAmount("")
-                  
-                  // Clear stored payment info
-                  localStorage.removeItem('pending_payment_order_id')
-                  localStorage.removeItem('pending_payment_amount')
-                  localStorage.removeItem('pending_payment_user_email')
-                }, 3000)
-              } else {
-                setError('Payment failed. Please try again or use manual confirmation.')
-              }
-            }}
-            onClose={() => {
-              setShowPaymentIframe(false)
-              setPollingStatus(null)
-              setError('Payment cancelled. You can try again anytime.')
-            }}
-          />
-        </div>
-      )}
-
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Manual Payment Confirmation - Show if there's a pending payment or user needs it */}
-        {(orderId || pollingStatus) && (
-          <div className="lg:col-span-2">
-            <ManualPaymentConfirm user={user} onUserUpdate={onUserUpdate} />
-          </div>
-        )}
-        {/* CPay Checkout Card */}
-        <Card className="bg-gradient-to-br from-orange-500/10 to-amber-500/10 border-orange-500/20 shadow-lg">
+        {/* Stripe Payment Card */}
+        <Card className="bg-gradient-to-br from-blue-500/10 to-purple-500/10 border-blue-500/20 shadow-lg">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Bitcoin className="w-5 h-5 text-orange-500" />
-              Cryptocurrency Payment
+              <CreditCard className="w-5 h-5 text-blue-500" />
+              Secure Card Payment
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="space-y-4">
               <p className="text-sm text-muted-foreground">
-                Buy crypto securely and add funds to your ChronosTime account instantly.
+                Pay securely with your credit or debit card. Powered by Stripe for maximum security.
               </p>
 
               {/* Amount Input */}
@@ -250,11 +115,33 @@ export function BalanceTopup({ user, onUserUpdate }: BalanceTopupProps) {
                 <Input
                   type="number"
                   min="10"
+                  max="10000"
                   placeholder="Enter amount e.g. 100"
                   value={amount}
                   onChange={(e) => setAmount(e.target.value)}
-                  className="bg-background border-border"
+                  className="bg-background border-border text-lg h-12"
                 />
+                <p className="text-xs text-muted-foreground">
+                  Minimum: $10 • Maximum: $10,000 per transaction
+                </p>
+              </div>
+
+              {/* Quick Amount Buttons */}
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-foreground">Quick Select:</label>
+                <div className="flex flex-wrap gap-2">
+                  {quickAmounts.map((quickAmount) => (
+                    <Button
+                      key={quickAmount}
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setAmount(quickAmount.toString())}
+                      className="bg-background/50 hover:bg-primary/10"
+                    >
+                      ${quickAmount}
+                    </Button>
+                  ))}
+                </div>
               </div>
 
               {/* Payment Instructions */}
@@ -263,61 +150,63 @@ export function BalanceTopup({ user, onUserUpdate }: BalanceTopupProps) {
                 <ol className="text-sm text-muted-foreground space-y-2">
                   <li className="flex items-start gap-2">
                     <span className="font-bold text-primary">1.</span>
-                    <span>Click "Buy with Crypto" to open secure checkout</span>
+                    <span>Enter the amount you want to add</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="font-bold text-primary">2.</span>
-                    <span>Complete payment directly on this page (no redirects)</span>
+                    <span>Click "Pay with Card" to open secure Stripe checkout</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="font-bold text-primary">3.</span>
-                    <span>Your balance updates automatically within seconds</span>
+                    <span>Complete payment with your card details</span>
                   </li>
                   <li className="flex items-start gap-2">
                     <span className="font-bold text-primary">4.</span>
-                    <span>Manual confirmation available if needed</span>
+                    <span>Your balance updates instantly after payment</span>
                   </li>
                 </ol>
               </div>
 
-              {/* CPay Checkout Button */}
-              <div>
-                {error && (
-                  <div className="mb-3 text-sm text-destructive flex items-center gap-2">
-                    <AlertCircle className="w-4 h-4" />
-                    {error}
-                  </div>
-                )}
-                {pollingStatus && (
-                  <div className="mb-3 text-sm text-blue-600 flex items-center gap-2 bg-blue-50 p-3 rounded-lg border border-blue-200">
-                    <CheckCircle className="w-4 h-4" />
-                    {pollingStatus}
-                  </div>
-                )}
-                <Button 
-                  onClick={handleStartCryptoCheckout}
-                  disabled={!amount || Number(amount) < 10}
-                  className="w-full bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-semibold h-14 text-lg shadow-lg"
-                >
-                  <Bitcoin className="w-6 h-6 mr-2" />
-                  Buy with Crypto
-                  <ExternalLink className="w-4 h-4 ml-2" />
-                </Button>
-              </div>
+              {/* Error/Success Messages */}
+              {error && (
+                <div className="text-sm text-destructive flex items-center gap-2 bg-red-50 p-3 rounded-lg border border-red-200">
+                  <AlertCircle className="w-4 h-4" />
+                  {error}
+                </div>
+              )}
+
+              {success && (
+                <div className="text-sm text-green-600 flex items-center gap-2 bg-green-50 p-3 rounded-lg border border-green-200">
+                  <CheckCircle className="w-4 h-4" />
+                  {success}
+                </div>
+              )}
+
+              {/* Stripe Checkout Button */}
+              <Button 
+                onClick={handleStripeCheckout}
+                disabled={loading || !amount || Number(amount) < 10}
+                className="w-full bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-600 hover:to-purple-600 text-white font-semibold h-14 text-lg shadow-lg"
+              >
+                <CreditCard className="w-6 h-6 mr-2" />
+                {loading ? 'Creating Checkout...' : 'Pay with Card'}
+                <ArrowRight className="w-4 h-4 ml-2" />
+              </Button>
 
               <p className="text-xs text-muted-foreground text-center">
-                Secure payment powered by CPay • Instant processing<br/>
-                💡 Payment opens directly on this page - no redirects needed
+                Secure payment powered by Stripe • Instant processing<br/>
+                🔒 Your card details are never stored on our servers
               </p>
             </div>
 
-            {/* Supported Cryptocurrencies */}
+            {/* Supported Payment Methods */}
             <div className="border-t border-border pt-4">
-              <h4 className="text-sm font-medium mb-3">Accepted Cryptocurrencies:</h4>
+              <h4 className="text-sm font-medium mb-3">Accepted Payment Methods:</h4>
               <div className="flex flex-wrap gap-2">
-                <Badge variant="outline" className="bg-background/50">Bitcoin (BTC)</Badge>
-                <Badge variant="outline" className="bg-background/50">Ethereum (ETH)</Badge>
-                <Badge variant="outline" className="bg-background/50">USDT</Badge>
+                <Badge variant="outline" className="bg-background/50">Visa</Badge>
+                <Badge variant="outline" className="bg-background/50">Mastercard</Badge>
+                <Badge variant="outline" className="bg-background/50">American Express</Badge>
+                <Badge variant="outline" className="bg-background/50">Discover</Badge>
                 <Badge variant="outline" className="bg-background/50">And more...</Badge>
               </div>
             </div>
@@ -340,7 +229,7 @@ export function BalanceTopup({ user, onUserUpdate }: BalanceTopupProps) {
                 </div>
                 <div>
                   <h4 className="font-medium text-foreground">Top Up Balance</h4>
-                  <p className="text-sm text-muted-foreground">Add funds to your account using cryptocurrency</p>
+                  <p className="text-sm text-muted-foreground">Add funds to your account using your credit/debit card</p>
                 </div>
               </div>
 
@@ -391,11 +280,22 @@ export function BalanceTopup({ user, onUserUpdate }: BalanceTopupProps) {
             {/* Security Badge */}
             <div className="bg-blue-500/10 border border-blue-500/20 rounded-lg p-4">
               <div className="flex items-center gap-2 mb-2">
-                <CheckCircle className="w-4 h-4 text-blue-500" />
-                <span className="font-medium text-blue-500">100% Secure</span>
+                <Shield className="w-4 h-4 text-blue-500" />
+                <span className="font-medium text-blue-500">Bank-Level Security</span>
               </div>
               <p className="text-sm text-muted-foreground">
-                All payments are processed through CPay's secure checkout. Your funds will reflect in your account within 5-10 minutes.
+                All payments are processed through Stripe's secure infrastructure. Your card details are encrypted and never stored on our servers.
+              </p>
+            </div>
+
+            {/* Processing Time */}
+            <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-4">
+              <div className="flex items-center gap-2 mb-2">
+                <Clock className="w-4 h-4 text-green-500" />
+                <span className="font-medium text-green-500">Instant Processing</span>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                Your balance will be updated immediately after successful payment. No waiting time required.
               </p>
             </div>
           </CardContent>
@@ -411,37 +311,35 @@ export function BalanceTopup({ user, onUserUpdate }: BalanceTopupProps) {
           <div>
             <h4 className="font-medium text-foreground mb-1">How long does it take for my balance to update?</h4>
             <p className="text-sm text-muted-foreground">
-              After completing the CPay checkout, your balance will be updated automatically within 5-10 minutes once the blockchain confirms your transaction.
+              Your balance updates instantly after successful payment. There's no waiting time with Stripe payments.
             </p>
           </div>
           <div>
-            <h4 className="font-medium text-foreground mb-1">What cryptocurrencies can I use?</h4>
+            <h4 className="font-medium text-foreground mb-1">What payment methods are accepted?</h4>
             <p className="text-sm text-muted-foreground">
-              CPay supports Bitcoin, Ethereum, USDT, USDC, and many other popular cryptocurrencies. You'll see all available options on the checkout page.
+              We accept all major credit and debit cards including Visa, Mastercard, American Express, and Discover through Stripe.
             </p>
           </div>
           <div>
-            <h4 className="font-medium text-foreground mb-1">Is there a minimum deposit amount?</h4>
+            <h4 className="font-medium text-foreground mb-1">Is there a minimum or maximum deposit amount?</h4>
             <p className="text-sm text-muted-foreground">
-              The minimum deposit depends on the cryptocurrency you choose. Typically, it's around $10-20 to ensure the transaction fees don't eat into your deposit.
+              The minimum deposit is $10 and the maximum is $10,000 per transaction. You can make multiple transactions if needed.
             </p>
           </div>
           <div>
-            <h4 className="font-medium text-foreground mb-1">What if my payment doesn't show up?</h4>
+            <h4 className="font-medium text-foreground mb-1">Is my payment information secure?</h4>
             <p className="text-sm text-muted-foreground">
-              If your balance doesn't update within 30 minutes, please contact our support team with your transaction ID. We'll investigate and credit your account manually if needed.
+              Yes, all payments are processed through Stripe's secure infrastructure. Your card details are encrypted and never stored on our servers.
+            </p>
+          </div>
+          <div>
+            <h4 className="font-medium text-foreground mb-1">What if my payment fails?</h4>
+            <p className="text-sm text-muted-foreground">
+              If your payment fails, you'll be redirected back to this page with an error message. You can try again or contact support if the issue persists.
             </p>
           </div>
         </CardContent>
       </Card>
-
-      {/* Manual Payment Confirmation Section */}
-      {!orderId && !pollingStatus && (
-        <div className="mt-8">
-          <ManualPaymentConfirm user={user} onUserUpdate={onUserUpdate} />
-        </div>
-      )}
     </div>
   )
 }
-
