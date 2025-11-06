@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { stripe } from '@/lib/stripe'
+import { getStripe } from '@/lib/stripe'
 import { createClient } from '@supabase/supabase-js'
 
 export async function POST(request: NextRequest) {
@@ -13,6 +13,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Retrieve the session from Stripe
+    const stripe = getStripe()
     const session = await stripe.checkout.sessions.retrieve(session_id)
 
     if (!session) {
