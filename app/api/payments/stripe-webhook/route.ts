@@ -48,17 +48,27 @@ export async function POST(request: NextRequest) {
       case 'checkout.session.completed':
         const session = event.data.object
         
+        console.log('=== CHECKOUT SESSION COMPLETED ===')
+        console.log('Session ID:', session.id)
+        console.log('Session metadata:', session.metadata)
+        console.log('Amount total:', session.amount_total)
+        console.log('Payment status:', session.payment_status)
+        
         // Extract metadata
         const userId = session.metadata?.user_id
         const amount = parseFloat(session.metadata?.amount || '0')
         
+        console.log('Extracted userId:', userId)
+        console.log('Extracted amount:', amount)
+        
         if (!userId || !amount) {
-          console.error('Missing metadata in checkout session:', session.id)
+          console.error('Missing metadata in checkout session:', session.id, { userId, amount })
           break
         }
 
         // Update payment transaction status
-        const { error: updateError } = await supabase
+        console.log('Updating payment transaction...')
+        const { data: updatedTransaction, error: updateError } = await supabase
           .from('payment_transactions')
           .update({
             status: 'completed',
@@ -71,37 +81,58 @@ export async function POST(request: NextRequest) {
             }
           })
           .eq('stripe_session_id', session.id)
+          .select()
 
         if (updateError) {
           console.error('Error updating payment transaction:', updateError)
+        } else {
+          console.log('Payment transaction updated:', updatedTransaction)
         }
 
         // Credit user balance
+        console.log('Fetching user for balance update...')
         const { data: user, error: userError } = await supabase
           .from('users')
-          .select('balance, total_invested')
+          .select('id, balance, total_invested, email, username')
           .eq('id', userId)
           .single()
 
         if (userError) {
           console.error('Error fetching user:', userError)
+          console.log('User ID that failed:', userId)
+          
+          // Try to find user by different methods
+          const { data: allUsers } = await supabase
+            .from('users')
+            .select('id, email, username')
+            .limit(5)
+          console.log('Sample users in database:', allUsers)
           break
         }
 
-        const { error: balanceError } = await supabase
+        console.log('Found user:', user)
+        
+        const newBalance = (user.balance || 0) + amount
+        const newTotalInvested = (user.total_invested || 0) + amount
+        
+        console.log('Updating user balance from', user.balance, 'to', newBalance)
+        
+        const { data: updatedUser, error: balanceError } = await supabase
           .from('users')
           .update({
-            balance: (user.balance || 0) + amount,
-            total_invested: (user.total_invested || 0) + amount,
+            balance: newBalance,
+            total_invested: newTotalInvested,
             updated_at: new Date().toISOString()
           })
           .eq('id', userId)
+          .select()
 
         if (balanceError) {
           console.error('Error updating user balance:', balanceError)
           break
         }
 
+        console.log('User balance updated successfully:', updatedUser)
         console.log(`Successfully credited $${amount} to user ${userId}`)
         break
 

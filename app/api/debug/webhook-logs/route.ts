@@ -1,11 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
-/**
- * Webhook Debug Endpoint
- * Check webhook logs and payment status
- */
-
 export async function GET(request: NextRequest) {
   try {
     const supabase = createClient(
@@ -19,63 +14,95 @@ export async function GET(request: NextRequest) {
       }
     )
 
-    // Check if payment_transactions table exists
-    let tableExists = false
-    let recentPayments: any[] = []
-    
-    try {
-      const { data, error } = await supabase
-        .from('payment_transactions')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(10)
-      
-      if (!error) {
-        tableExists = true
-        recentPayments = data || []
-      }
-    } catch (error) {
-      tableExists = false
+    // Get recent payment transactions
+    const { data: transactions, error: transactionsError } = await supabase
+      .from('payment_transactions')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(10)
+
+    if (transactionsError) {
+      console.error('Error fetching transactions:', transactionsError)
     }
 
-    // Get recent users to check balance updates
-    const { data: recentUsers } = await supabase
+    // Get recent users for comparison
+    const { data: users, error: usersError } = await supabase
       .from('users')
-      .select('id, email, balance, updated_at')
+      .select('id, email, username, balance, total_invested, updated_at')
       .order('updated_at', { ascending: false })
       .limit(5)
 
+    if (usersError) {
+      console.error('Error fetching users:', usersError)
+    }
+
     return NextResponse.json({
-      status: 'Webhook Debug Information',
-      timestamp: new Date().toISOString(),
-      checks: {
-        payment_transactions_table_exists: tableExists,
-        recent_payments_count: recentPayments.length,
-        webhook_endpoint: `${request.nextUrl.origin}/api/payments/cpay-webhook`,
-        manual_confirm_endpoint: `${request.nextUrl.origin}/api/payments/manual-confirm`
-      },
-      recent_payments: recentPayments,
-      recent_users: recentUsers,
-      troubleshooting: {
-        step_1: "Check if payment_transactions table exists in Supabase",
-        step_2: "Verify CPay webhook URL is configured correctly",
-        step_3: "Check if CPay is sending webhooks to your endpoint",
-        step_4: "Use manual confirmation if webhooks are not working",
-        step_5: "Check server logs for webhook errors"
-      },
-      next_steps: [
-        tableExists ? "✅ Payment table exists" : "❌ Create payment_transactions table in Supabase",
-        "Configure CPay webhook URL: " + `${request.nextUrl.origin}/api/payments/cpay-webhook`,
-        "Test webhook with manual confirmation tool",
-        "Check CPay dashboard for webhook delivery status"
-      ]
+      success: true,
+      recent_transactions: transactions || [],
+      recent_users: users || [],
+      debug_info: {
+        transaction_count: transactions?.length || 0,
+        user_count: users?.length || 0,
+        timestamp: new Date().toISOString()
+      }
     })
 
   } catch (error) {
-    console.error('Debug endpoint error:', error)
+    console.error('Debug logs error:', error)
     return NextResponse.json({
-      error: 'Debug endpoint failed',
-      message: error instanceof Error ? error.message : 'Unknown error'
+      error: 'Failed to fetch debug logs'
+    }, { status: 500 })
+  }
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const { user_id, session_id } = await request.json()
+
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_ROLE_KEY!,
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false
+        }
+      }
+    )
+
+    // Debug specific user and transaction
+    const results: any = {}
+
+    if (user_id) {
+      const { data: user, error: userError } = await supabase
+        .from('users')
+        .select('*')
+        .eq('id', user_id)
+        .single()
+
+      results.user = { data: user, error: userError?.message }
+    }
+
+    if (session_id) {
+      const { data: transaction, error: transactionError } = await supabase
+        .from('payment_transactions')
+        .select('*')
+        .eq('stripe_session_id', session_id)
+        .single()
+
+      results.transaction = { data: transaction, error: transactionError?.message }
+    }
+
+    return NextResponse.json({
+      success: true,
+      debug_results: results,
+      timestamp: new Date().toISOString()
+    })
+
+  } catch (error) {
+    console.error('Debug POST error:', error)
+    return NextResponse.json({
+      error: 'Failed to debug specific records'
     }, { status: 500 })
   }
 }
