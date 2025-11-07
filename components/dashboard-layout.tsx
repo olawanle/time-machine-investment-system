@@ -24,7 +24,6 @@ import {
   Activity,
   LogOut
 } from "lucide-react"
-import { useTheme } from "next-themes"
 import { useState, useEffect } from "react"
 
 interface DashboardLayoutProps {
@@ -36,12 +35,21 @@ interface DashboardLayoutProps {
 export function DashboardLayout({ children, user, onLogout }: DashboardLayoutProps) {
   const router = useRouter()
   const pathname = usePathname()
-  const { theme, setTheme } = useTheme()
-  const [mounted, setMounted] = useState(false)
+  const [theme, setTheme] = useState('light')
 
   useEffect(() => {
-    setMounted(true)
+    // Get theme from localStorage
+    const savedTheme = localStorage.getItem('theme') || 'light'
+    setTheme(savedTheme)
+    document.documentElement.classList.toggle('dark', savedTheme === 'dark')
   }, [])
+
+  const toggleTheme = () => {
+    const newTheme = theme === 'dark' ? 'light' : 'dark'
+    setTheme(newTheme)
+    localStorage.setItem('theme', newTheme)
+    document.documentElement.classList.toggle('dark', newTheme === 'dark')
+  }
 
   const sidebarItems = [
     { id: "dashboard", label: "Dashboard", icon: Home, path: "/dashboard" },
@@ -163,10 +171,10 @@ export function DashboardLayout({ children, user, onLogout }: DashboardLayoutPro
               <Button 
                 variant="ghost" 
                 size="sm"
-                onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+                onClick={toggleTheme}
                 title="Toggle theme"
               >
-                {mounted && theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+                {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
               </Button>
               <Button variant="ghost" size="sm" title="Notifications">
                 <Bell className="w-4 h-4" />
