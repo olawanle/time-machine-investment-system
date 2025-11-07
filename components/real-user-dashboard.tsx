@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
-import { useTheme } from "@/components/theme-provider"
+// Theme provider removed - using simple localStorage
 import { formatCurrency, generateId } from "@/lib/utils"
 import { storage, type User, type TimeMachine } from "@/lib/storage"
 import { 
@@ -47,12 +47,23 @@ export function RealUserDashboard({ user: initialUser, onUserUpdate, onLogout }:
   const [success, setSuccess] = useState("")
   const [userMachines, setUserMachines] = useState<any[]>([])
   const [machinesLoading, setMachinesLoading] = useState(true)
-  const { theme, toggleTheme } = useTheme()
+  const [theme, setTheme] = useState('light')
   const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
     setMounted(true)
+    // Get theme from localStorage
+    const savedTheme = localStorage.getItem('theme') || 'light'
+    setTheme(savedTheme)
+    document.documentElement.classList.toggle('dark', savedTheme === 'dark')
   }, [])
+
+  const toggleTheme = () => {
+    const newTheme = theme === 'dark' ? 'light' : 'dark'
+    setTheme(newTheme)
+    localStorage.setItem('theme', newTheme)
+    document.documentElement.classList.toggle('dark', newTheme === 'dark')
+  }
 
   // Fetch user machines from database
   useEffect(() => {
