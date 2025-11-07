@@ -4,6 +4,7 @@ import { ReactNode } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { Badge } from "@/components/ui/badge"
 import { 
   Home,
   TrendingUp, 
@@ -22,7 +23,8 @@ import {
   DollarSign,
   Clock,
   Activity,
-  LogOut
+  LogOut,
+  ShoppingBag
 } from "lucide-react"
 import { useState, useEffect } from "react"
 
@@ -35,21 +37,13 @@ interface DashboardLayoutProps {
 export function DashboardLayout({ children, user, onLogout }: DashboardLayoutProps) {
   const router = useRouter()
   const pathname = usePathname()
-  const [theme, setTheme] = useState('light')
+  const [theme, setTheme] = useState('dark')
 
   useEffect(() => {
-    // Get theme from localStorage
-    const savedTheme = localStorage.getItem('theme') || 'light'
-    setTheme(savedTheme)
-    document.documentElement.classList.toggle('dark', savedTheme === 'dark')
+    // Force dark theme for neon design
+    setTheme('dark')
+    document.documentElement.classList.add('dark')
   }, [])
-
-  const toggleTheme = () => {
-    const newTheme = theme === 'dark' ? 'light' : 'dark'
-    setTheme(newTheme)
-    localStorage.setItem('theme', newTheme)
-    document.documentElement.classList.toggle('dark', newTheme === 'dark')
-  }
 
   const sidebarItems = [
     { id: "dashboard", label: "Dashboard", icon: Home, path: "/dashboard" },
@@ -71,53 +65,61 @@ export function DashboardLayout({ children, user, onLogout }: DashboardLayoutPro
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex">
-      {/* Sidebar */}
-      <div className="w-64 bg-white dark:bg-gray-800 shadow-sm border-r border-gray-200 dark:border-gray-700 flex flex-col">
+    <div className="min-h-screen bg-gradient-to-br from-[#020817] via-[#0b1220] to-[#020817] flex">
+      {/* Sidebar - Neon Theme */}
+      <div className="w-64 glass border-r border-[#3CE7FF]/20 flex flex-col">
         {/* Header */}
-        <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+        <div className="p-4 border-b border-[#3CE7FF]/20">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-              <Clock className="w-5 h-5 text-white" />
+            <div className="w-10 h-10 bg-gradient-to-br from-[#3CE7FF] to-[#6C63FF] rounded-xl flex items-center justify-center shadow-lg shadow-[#3CE7FF]/30">
+              <Clock className="w-6 h-6 text-black" />
             </div>
             <div>
-              <h1 className="font-semibold text-gray-900 dark:text-white">ChronosTime</h1>
-              <p className="text-xs text-gray-500 dark:text-gray-400">Investment Platform</p>
+              <h1 className="font-bold text-white text-lg">ChronosTime</h1>
+              <p className="text-xs text-[#3CE7FF]">Investment Platform</p>
             </div>
           </div>
         </div>
 
-        {/* Search */}
-        <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-          <div className="relative">
-            <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-            <Input 
-              placeholder="Search features..." 
-              className="pl-10 bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-700 text-sm"
-            />
+        {/* User Balance Card */}
+        <div className="p-4 border-b border-[#3CE7FF]/20">
+          <div className="glass-sm p-3 rounded-xl border border-[#3CE7FF]/20">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-xs text-gray-400">Balance</span>
+              <Wallet className="w-4 h-4 text-[#3CE7FF]" />
+            </div>
+            <p className="text-2xl font-bold gradient-text">
+              ${(user?.balance || 0).toLocaleString()}
+            </p>
+            <div className="flex items-center gap-1 mt-1">
+              <span className="text-xs text-gray-400">Tier:</span>
+              <Badge className="bg-[#6C63FF]/20 text-[#6C63FF] border-[#6C63FF]/30 text-xs">
+                {user?.tier || 'Bronze'}
+              </Badge>
+            </div>
           </div>
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 p-2 overflow-y-auto">
+        <nav className="flex-1 p-3 overflow-y-auto space-y-1">
           {sidebarItems.map((item) => {
             const isActive = pathname === item.path
             return (
               <button
                 key={item.id}
                 onClick={() => router.push(item.path)}
-                className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-300 ${
                   isActive
-                    ? "bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 border-r-2 border-blue-600"
-                    : "text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white"
+                    ? "bg-gradient-to-r from-[#3CE7FF]/20 to-[#6C63FF]/20 text-[#3CE7FF] border border-[#3CE7FF]/30 shadow-lg shadow-[#3CE7FF]/20"
+                    : "text-gray-400 hover:bg-[#0b1220]/50 hover:text-white hover:border hover:border-[#3CE7FF]/10"
                 }`}
               >
-                <item.icon className="w-4 h-4" />
-                {item.label}
+                <item.icon className="w-5 h-5" />
+                <span className="flex-1 text-left">{item.label}</span>
                 {item.badge && (
-                  <span className="ml-auto text-xs bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-400 px-2 py-0.5 rounded">
+                  <Badge className="bg-[#6C63FF] text-white text-xs px-2 py-0.5 shadow-lg shadow-[#6C63FF]/30">
                     {item.badge}
-                  </span>
+                  </Badge>
                 )}
               </button>
             )
@@ -125,21 +127,22 @@ export function DashboardLayout({ children, user, onLogout }: DashboardLayoutPro
         </nav>
 
         {/* User Profile */}
-        <div className="p-4 border-t border-gray-200 dark:border-gray-700">
+        <div className="p-4 border-t border-[#3CE7FF]/20">
           <div className="flex items-center gap-3 mb-3">
-            <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
-              <UserIcon className="w-4 h-4 text-white" />
+            <div className="w-10 h-10 bg-gradient-to-br from-[#3CE7FF] to-[#6C63FF] rounded-full flex items-center justify-center shadow-lg shadow-[#3CE7FF]/30">
+              <span className="text-black font-bold text-sm">
+                {user?.username?.charAt(0).toUpperCase() || 'U'}
+              </span>
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-gray-900 dark:text-white truncate">{user?.username || 'User'}</p>
-              <p className="text-xs text-gray-500 dark:text-gray-400 capitalize">{user?.tier || 'bronze'} tier</p>
+              <p className="text-sm font-semibold text-white truncate">{user?.username || 'User'}</p>
+              <p className="text-xs text-gray-400 truncate">{user?.email || ''}</p>
             </div>
           </div>
           <Button 
             onClick={handleLogout} 
-            variant="outline" 
+            className="w-full bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 rounded-xl transition-all duration-300"
             size="sm"
-            className="w-full"
           >
             <LogOut className="w-4 h-4 mr-2" />
             Logout
@@ -149,42 +152,44 @@ export function DashboardLayout({ children, user, onLogout }: DashboardLayoutPro
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col">
-        {/* Top Bar */}
-        <header className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 px-6 py-4">
+        {/* Top Bar - Neon Theme */}
+        <header className="glass border-b border-[#3CE7FF]/20 px-6 py-4">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">
+              <h1 className="text-2xl font-bold gradient-text">
                 {sidebarItems.find(item => item.path === pathname)?.label || 'Dashboard'}
               </h1>
-              <p className="text-gray-600 dark:text-gray-400">
-                Manage your investments and track your earnings
+              <p className="text-gray-400 text-sm mt-1">
+                {pathname === '/dashboard' && 'Your investment portfolio is performing well'}
+                {pathname === '/marketplace' && 'Buy time machines and start earning passive income'}
+                {pathname === '/portfolio' && 'Manage your time machine investments'}
+                {pathname === '/wallet' && 'Manage your funds and transactions'}
+                {pathname === '/analytics' && 'Track your performance metrics'}
+                {pathname === '/referrals' && 'Invite friends and earn rewards'}
+                {pathname === '/settings' && 'Manage your account preferences'}
               </p>
             </div>
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg px-4 py-2">
-                <Wallet className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Balance:</span>
-                <span className="text-lg font-bold text-blue-600 dark:text-blue-400">
-                  ${(user?.balance || 0).toLocaleString()}
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 glass-sm px-4 py-2 rounded-xl border border-[#3CE7FF]/20">
+                <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                <span className="text-sm text-gray-400">
+                  {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
                 </span>
               </div>
               <Button 
                 variant="ghost" 
                 size="sm"
-                onClick={toggleTheme}
-                title="Toggle theme"
+                className="glass-sm border border-[#3CE7FF]/20 hover:border-[#3CE7FF]/40 rounded-xl"
+                title="Notifications"
               >
-                {theme === "dark" ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
-              </Button>
-              <Button variant="ghost" size="sm" title="Notifications">
-                <Bell className="w-4 h-4" />
+                <Bell className="w-4 h-4 text-[#3CE7FF]" />
               </Button>
             </div>
           </div>
         </header>
 
         {/* Page Content */}
-        <main className="flex-1 overflow-y-auto">
+        <main className="flex-1 overflow-y-auto bg-gradient-to-br from-[#020817] via-[#0b1220] to-[#020817]">
           {children}
         </main>
       </div>
