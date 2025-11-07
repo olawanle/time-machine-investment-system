@@ -4,16 +4,18 @@ import { createClient } from '@supabase/supabase-js'
 
 export async function POST(request: NextRequest) {
   try {
-    const { session_id, user_id } = await request.json()
+    const body = await request.json()
+    const { session_id, user_id } = body
 
-    if (!session_id || !user_id) {
+    if (!session_id) {
       return NextResponse.json({
-        error: 'Missing session_id or user_id'
+        error: 'Session ID is required'
       }, { status: 400 })
     }
 
-    // Retrieve the session from Stripe
     const stripe = getStripe()
+    
+    // Retrieve the checkout session from Stripe
     const session = await stripe.checkout.sessions.retrieve(session_id)
 
     if (!session) {
@@ -22,10 +24,18 @@ export async function POST(request: NextRequest) {
       }, { status: 404 })
     }
 
-    // Verify the session belongs to the user
+    // Check if payment was successful
+    if (session.payment_status !== 'paid') {
+      return NextResponse.json({
+        error: 'Payment not completed',
+        session
+      }, { status: 400 })
+    }
+
+    // Verify the session belongs to this user
     if (session.metadata?.user_id !== user_id) {
       return NextResponse.json({
-        error: 'Session does not belong to user'
+        error: 'Session does not belong to this user'
       }, { status: 403 })
     }
 
@@ -40,29 +50,15 @@ export async function POST(request: NextRequest) {
       }
     )
 
-    // Get payment transaction from database
-    const { data: transaction, error: transactionError } = await supabase
-      .from('payment_transactions')
-      .select('*')
-      .eq('stripe_session_id', session_id)
-      .single()
-
-    if (transactionError) {
-      console.error('Error fetching transaction:', transactionError)
-    }
-
     // Get updated user balance
     const { data: user, error: userError } = await supabase
       .from('users')
-      .select('balance, total_invested')
+      .select('id, balance, email, username')
       .eq('id', user_id)
       .single()
 
     if (userError) {
       console.error('Error fetching user:', userError)
-      return NextResponse.json({
-        error: 'Failed to fetch user data'
-      }, { status: 500 })
     }
 
     return NextResponse.json({
@@ -71,20 +67,15 @@ export async function POST(request: NextRequest) {
         id: session.id,
         payment_status: session.payment_status,
         amount_total: session.amount_total,
-        currency: session.currency,
-        status: session.status
+        metadata: session.metadata
       },
-      transaction: transaction || null,
-      user: {
-        balance: user.balance,
-        total_invested: user.total_invested
-      }
+      user: user || null
     })
 
-  } catch (error) {
-    console.error('Session verification error:', error)
+  } catch (error: any) {
+    console.error('Error verifying session:', error)
     return NextResponse.json({
-      error: 'Failed to verify session'
+      error: error.message || 'Failed to verify session'
     }, { status: 500 })
   }
 }

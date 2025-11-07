@@ -4,20 +4,22 @@ import { createClient } from '@supabase/supabase-js'
 
 export async function POST(request: NextRequest) {
   try {
-    const { amount, user_id, user_email } = await request.json()
+    const body = await request.json()
+    const { amount, user_id, user_email } = body
 
-    if (!amount || !user_id || !user_email) {
+    if (!amount || amount < 10) {
       return NextResponse.json({
-        error: 'Missing required fields: amount, user_id, user_email'
+        error: 'Invalid amount. Minimum is $10'
       }, { status: 400 })
     }
 
-    if (amount < 10) {
+    if (!user_id) {
       return NextResponse.json({
-        error: 'Minimum amount is $10'
+        error: 'User ID is required'
       }, { status: 400 })
     }
 
+    const stripe = getStripe()
     const supabase = createClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY!,
@@ -29,21 +31,7 @@ export async function POST(request: NextRequest) {
       }
     )
 
-    // Verify user exists
-    const { data: user, error: userError } = await supabase
-      .from('users')
-      .select('id, email, username')
-      .eq('id', user_id)
-      .single()
-
-    if (userError || !user) {
-      return NextResponse.json({
-        error: 'User not found'
-      }, { status: 404 })
-    }
-
     // Create Stripe checkout session
-    const stripe = getStripe()
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       line_items: [
@@ -51,9 +39,8 @@ export async function POST(request: NextRequest) {
           price_data: {
             currency: 'usd',
             product_data: {
-              name: 'ChronosTime Balance Top-up',
-              description: `Add $${amount} to your ChronosTime account`,
-              images: ['https://your-domain.com/logo.png'], // Replace with your logo
+              name: 'ChronosTime Balance Top-Up',
+              description: `Add $${amount} to your account balance`,
             },
             unit_amount: Math.round(amount * 100), // Convert to cents
           },
@@ -62,48 +49,44 @@ export async function POST(request: NextRequest) {
       ],
       mode: 'payment',
       success_url: `${process.env.NEXT_PUBLIC_APP_URL}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard?payment=cancelled`,
+      cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/wallet`,
       customer_email: user_email,
       metadata: {
         user_id: user_id,
-        user_email: user_email,
         amount: amount.toString(),
         type: 'balance_topup'
-      },
-      expires_at: Math.floor(Date.now() / 1000) + (30 * 60), // 30 minutes
+      }
     })
 
-    // Store pending payment in database
-    const { error: paymentError } = await supabase
+    // Create payment transaction record
+    const { error: dbError } = await supabase
       .from('payment_transactions')
       .insert({
         user_id: user_id,
-        stripe_session_id: session.id,
         amount: amount,
-        currency: 'usd',
+        currency: 'USD',
         status: 'pending',
-        payment_method: 'stripe',
+        stripe_session_id: session.id,
         metadata: {
-          user_email: user_email,
-          checkout_url: session.url
+          user_email,
+          type: 'balance_topup'
         }
       })
 
-    if (paymentError) {
-      console.error('Error storing payment transaction:', paymentError)
-      // Continue anyway, we can handle this in webhook
+    if (dbError) {
+      console.error('Error creating payment transaction:', dbError)
+      // Continue anyway - webhook will handle it
     }
 
     return NextResponse.json({
-      success: true,
-      session_id: session.id,
-      checkout_url: session.url
+      checkout_url: session.url,
+      session_id: session.id
     })
 
-  } catch (error) {
-    console.error('Stripe checkout session creation error:', error)
+  } catch (error: any) {
+    console.error('Error creating checkout session:', error)
     return NextResponse.json({
-      error: 'Failed to create checkout session'
+      error: error.message || 'Failed to create checkout session'
     }, { status: 500 })
   }
 }
