@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { storage } from '@/lib/storage'
 import { RealAnalytics } from '@/components/real-analytics'
+import { DashboardLayout } from '@/components/dashboard-layout'
 
 export default function AnalyticsPage() {
   const [user, setUser] = useState<any>(null)
@@ -46,8 +47,8 @@ export default function AnalyticsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <DashboardLayout user={user} onLogout={() => router.push('/')}>
       <RealAnalytics user={user} />
-    </div>
+    </DashboardLayout>
   )
 }

@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { storage } from '@/lib/storage'
 import { MachinePortfolio } from '@/components/machine-portfolio'
+import { DashboardLayout } from '@/components/dashboard-layout'
 
 export default function PortfolioPage() {
   const [user, setUser] = useState<any>(null)
@@ -52,11 +53,13 @@ export default function PortfolioPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background p-6">
-      <MachinePortfolio 
-        user={user} 
-        onUserUpdate={handleUserUpdate}
-      />
-    </div>
+    <DashboardLayout user={user} onLogout={() => router.push('/')}>
+      <div className="p-6">
+        <MachinePortfolio 
+          user={user} 
+          onUserUpdate={handleUserUpdate}
+        />
+      </div>
+    </DashboardLayout>
   )
 }

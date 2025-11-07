@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { storage } from '@/lib/storage'
 import { Referrals } from '@/components/referrals'
+import { DashboardLayout } from '@/components/dashboard-layout'
 
 export default function ReferralsPage() {
   const [user, setUser] = useState<any>(null)
@@ -51,8 +52,10 @@ export default function ReferralsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background p-6">
-      <Referrals user={user} onUserUpdate={handleUserUpdate} />
-    </div>
+    <DashboardLayout user={user} onLogout={() => router.push('/')}>
+      <div className="p-6">
+        <Referrals user={user} />
+      </div>
+    </DashboardLayout>
   )
 }
