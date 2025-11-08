@@ -26,7 +26,25 @@ function PaymentSuccessContent() {
     const verifyPayment = async () => {
       try {
         // Get user from localStorage
-        const currentUserId = localStorage.getItem('chronostime_current_user')
+        let currentUserId = localStorage.getItem('chronostime_current_user')
+        
+        // If no user ID, try to get from session metadata
+        if (!currentUserId && sessionId) {
+          try {
+            const stripe = await fetch('/api/payments/get-session-user', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ session_id: sessionId })
+            })
+            const data = await stripe.json()
+            if (data.user_id) {
+              currentUserId = data.user_id
+              localStorage.setItem('chronostime_current_user', currentUserId)
+            }
+          } catch (err) {
+            console.error('Failed to get user from session:', err)
+          }
+        }
         
         if (!currentUserId) {
           setStatus('error')
