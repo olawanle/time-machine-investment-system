@@ -114,7 +114,7 @@ export function ModernSidebar({ user, currentSection, onSectionChange, onLogout 
         <div className="grid grid-cols-2 gap-2">
           <div className="p-3 bg-slate-800/50 rounded-lg">
             <p className="text-xs text-slate-400">Balance</p>
-            <p className="text-sm font-semibold text-green-400">${user.claimedBalance.toFixed(2)}</p>
+            <p className="text-sm font-semibold text-green-400">${(user.balance || 0).toFixed(2)}</p>
           </div>
           <div className="p-3 bg-slate-800/50 rounded-lg">
             <p className="text-xs text-slate-400">Tier</p>

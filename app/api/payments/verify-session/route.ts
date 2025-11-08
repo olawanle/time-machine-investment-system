@@ -50,15 +50,35 @@ export async function POST(request: NextRequest) {
       }
     )
 
-    // Get updated user balance
+    // Get updated user with all data
     const { data: user, error: userError } = await supabase
       .from('users')
-      .select('id, balance, email, username')
+      .select('*')
       .eq('id', user_id)
       .single()
 
     if (userError) {
       console.error('Error fetching user:', userError)
+    }
+    
+    // Also fetch user's machines and referrals
+    let fullUser = user
+    if (user) {
+      const { data: machines } = await supabase
+        .from('time_machines')
+        .select('*')
+        .eq('user_id', user_id)
+      
+      const { data: referrals } = await supabase
+        .from('referrals')
+        .select('*')
+        .eq('referrer_id', user_id)
+      
+      fullUser = {
+        ...user,
+        machines: machines || [],
+        referrals: referrals?.map(r => r.referred_id) || []
+      }
     }
 
     return NextResponse.json({
@@ -69,7 +89,7 @@ export async function POST(request: NextRequest) {
         amount_total: session.amount_total,
         metadata: session.metadata
       },
-      user: user || null
+      user: fullUser || null
     })
 
   } catch (error: any) {
