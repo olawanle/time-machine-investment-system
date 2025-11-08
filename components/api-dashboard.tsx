@@ -87,8 +87,14 @@ export function APIDashboard({ user, onLogout }: APIDashboardProps) {
   useEffect(() => {
     setMounted(true)
     
-    // Check for payment status in URL parameters
+    // Check for section in URL parameters
     const urlParams = new URLSearchParams(window.location.search)
+    const section = urlParams.get('section')
+    if (section) {
+      setCurrentSection(section)
+    }
+    
+    // Check for payment status in URL parameters
     const paymentStatus = urlParams.get('payment')
     const amount = urlParams.get('amount')
     const balance = urlParams.get('balance')
