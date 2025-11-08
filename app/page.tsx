@@ -7,9 +7,8 @@ import { AnalyticsPage } from "@/components/analytics-page"
 import { AdminPanelV2 } from "@/components/admin-panel-v2"
 import { LandingPage } from "@/components/landing-page"
 import { ThemeProvider } from "@/components/theme-provider"
-import { APIDashboard } from "@/components/api-dashboard"
+import { UserDashboard } from "@/components/user-dashboard"
 import { SupremeAdminDashboard } from "@/components/supreme-admin-dashboard"
-import { RealUserDashboard } from "@/components/real-user-dashboard"
 import { ErrorBoundary } from "@/components/ui/error-boundary"
 import { ToastProvider } from "@/components/ui/toast-system"
 import { DatabaseInitializer } from "@/components/database-initializer"
@@ -175,7 +174,7 @@ export default function Home() {
         )}
 
         {view === "api" && user && (
-          <APIDashboard 
+          <UserDashboard 
             user={user}
             onLogout={handleLogout}
           />
@@ -194,7 +193,7 @@ export default function Home() {
       )}
 
       {(view === "dashboard" || view === "marketplace" || view === "referrals" || view === "settings") && user && (
-        <APIDashboard
+        <UserDashboard
           user={user}
           onLogout={handleLogout}
         />
